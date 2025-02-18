@@ -1,4 +1,4 @@
-# Online Store Microservices
+# ShopSphere
 
 This project is a microservices-based online store system, designed for scalability and ease of maintenance. Below is the project structure and an overview of each component:
 
