@@ -1,23 +1,49 @@
 const Product = require("../models/Product.model");
 
-// @desc Create a new product
+// // @desc Create a new product
+// exports.createProduct = async (req, res) => {
+//   try {
+//     const product = new Product(req.body);
+//     await product.save();
+//     res.status(201).json(product);
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// };
+
+// Create Product
 exports.createProduct = async (req, res) => {
   try {
     const product = new Product(req.body);
     await product.save();
-    res.status(201).json(product);
+    res.status(201).json({
+      success: true,
+      message: "Product created successfully",
+      data: product,
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc Get all products
+// // @desc Get all products
+// exports.getProducts = async (req, res) => {
+//   try {
+//     const products = await Product.find();
+//     res.json(products);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+
+// Get All Products
 exports.getProducts = async (req, res) => {
   try {
     const products = await Product.find();
-    res.json(products);
+    res.status(200).json({ success: true, data: products });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -51,3 +77,47 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// const Product = require("../models/Product");
+
+
+
+
+// // Get Single Product
+// exports.getProductById = async (req, res) => {
+//   try {
+//     const product = await Product.findById(req.params.id);
+//     if (!product) {
+//       return res.status(404).json({ success: false, message: "Product not found" });
+//     }
+//     res.status(200).json({ success: true, data: product });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+// // Update Product
+// exports.updateProduct = async (req, res) => {
+//   try {
+//     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+//     if (!product) {
+//       return res.status(404).json({ success: false, message: "Product not found" });
+//     }
+//     res.status(200).json({ success: true, message: "Product updated successfully", data: product });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+// // Delete Product
+// exports.deleteProduct = async (req, res) => {
+//   try {
+//     const product = await Product.findByIdAndDelete(req.params.id);
+//     if (!product) {
+//       return res.status(404).json({ success: false, message: "Product not found" });
+//     }
+//     res.status(200).json({ success: true, message: "Product deleted successfully" });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
