@@ -1,6 +1,6 @@
 const authService = require("../services/authService");
 
-class AuthController {
+class AuthControllers {
   async register(req, res) {
     try {
       const user = await authService.register(req.body);
@@ -30,4 +30,4 @@ class AuthController {
   }
 }
 
-module.exports = new AuthController();
+module.exports = new AuthControllers();
