@@ -1,8 +1,20 @@
 const express = require("express");
 const authControllers = require("../controllers/authControllers");
-const authMiddleware = require("../middlewares/authMiddleware");
+const {authMiddleware, authorizeRoles } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
+
+router.post("/admin-only", authMiddleware, authorizeRoles("admin"), (req, res) => {
+  res.json({ message: "This is an admin-only route!" });
+});
+
+router.get("/admin-dashboard", verifyAdmin, (req, res) => {
+    res.json({ message: "Welcome, Admin!" });
+  });
+
+router.get("/user-dashboard", authMiddleware, (req, res) => {
+  res.json({ message: "Welcome to the user dashboard!" });
+});
 
 router.post("/register", authControllers.register);
 router.post("/login", authControllers.login);
