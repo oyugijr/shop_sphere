@@ -27,14 +27,22 @@ class AuthService {
     if (!isMatch) throw new Error("Invalid email or password");
 
     // Generate JWT Token
-    const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: "1h" });
+    const token = (user) => {
+        return jwt.sign(
+            { userId: user._id, email: user.email, role: user.role }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: "1h" }
+        );
+    }
 
-    return { user, token };
+    return { user, token, role };
   }
+
 
   async getUserProfile(userId) {
     return await userRepository.findById(userId);
   }
 }
+
 
 module.exports = new AuthService();
