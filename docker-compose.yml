@@ -3,25 +3,29 @@ version: '3.8'
 services:
   product-service:
     build: ./product-service
+    container_name: shopsphere-product-service
     ports:
       - "5002:5002"
     depends_on:
       - mongodb
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/shopsphere-products
+      - MONGO_URI=mongodb+srv://Oyugi:Ste10103oyugi@cluster0.lzhig.mongodb.net/shopSphere?retryWrites=true&w=majority&appName=Cluster0
     networks:
       - shopsphere-network
+    restart: unless-stopped
 
   user-service:
     build: ./user-service
+    container_name: shopsphere-user-service
     ports:
       - "5001:5001"
     depends_on:
       - mongodb
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/shopsphere-users
+      - MONGO_URI=mongodb+srv://Oyugi:Ste10103oyugi@cluster0.lzhig.mongodb.net/shopSphere?retryWrites=true&w=majority&appName=Cluster0
     networks:
       - shopsphere-network
+    restart: unless-stopped
 
   mongodb:
     image: mongo:latest
@@ -34,9 +38,23 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+  mongo-express:
+    image: mongo-express
+    container_name: shopsphere-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+    depends_on:
+      - mongodb
+    networks:
+      - shopsphere-network
+
 networks:
   shopsphere-network:
+    driver: bridge
 
 volumes:
   mongodb_data:
-    
