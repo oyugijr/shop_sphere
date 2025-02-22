@@ -1,6 +1,16 @@
-version: '3.8'
+# version: '3.8'
 
 services:
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - user-service
+      - product-service
+    networks:
+      - shopsphere-network
+
   product-service:
     build: ./product-service
     container_name: shopsphere-product-service
