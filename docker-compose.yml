@@ -37,6 +37,18 @@ services:
       - shopsphere-network
     restart: unless-stopped
 
+  order-service:
+    build: ./order-service
+    ports:
+      - "5003:5003"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=mongodb+srv://Oyugi:Ste10103oyugi@cluster0.lzhig.mongodb.net/shopSphere?retryWrites=true&w=majority&appName=Cluster0
+    networks:
+      - shopsphere-network
+
+
   mongodb:
     image: mongo:latest
     container_name: shopsphere-mongo
