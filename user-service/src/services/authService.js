@@ -1,48 +1,20 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const userRepository = require("../repositories/userRepository");
+const generateToken = require("../utils/generateToken");
+const bcrypt = require("bcryptjs");
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+const registerUser = async (userData) => {
+  const existingUser = await userRepository.findByEmail(userData.email);
+  if (existingUser) throw new Error("User already exists");
 
-class AuthService {
-  async register(userData) {
-    const { name, email, password } = userData;
+  const user = await userRepository.createUser(userData);
+  return generateToken(user);
+};
 
-    // Check if user already exists
-    const existingUser = await userRepository.findByEmail(email);
-    if (existingUser) throw new Error("Email already in use");
+const loginUser = async ({ email, password }) => {
+  const user = await userRepository.findByEmail(email);
+  if (!user || !(await bcrypt.compare(password, user.password))) throw new Error("Invalid credentials");
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+  return generateToken(user);
+};
 
-    // Create new user
-    return await userRepository.create({ name, email, password: hashedPassword });
-  }
-
-  async login(email, password) {
-    const user = await userRepository.findByEmail(email);
-    if (!user) throw new Error("Invalid email or password");
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new Error("Invalid email or password");
-
-    // Generate JWT Token
-    const token = (user) => {
-        return jwt.sign(
-            { userId: user._id, email: user.email, role: user.role }, 
-            process.env.JWT_SECRET, 
-            { expiresIn: "1h" }
-        );
-    }
-
-    return { user, token, role };
-  }
-
-
-  async getUserProfile(userId) {
-    return await userRepository.findById(userId);
-  }
-}
-
-
-module.exports = new AuthService();
+module.exports = { registerUser, loginUser };

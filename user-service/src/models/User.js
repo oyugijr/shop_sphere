@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-const userSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    role: { type: String, enum: ["user", "admin"], default: "user" }, // Role field
+    role: { type: String, enum: ["user", "admin"], default: "user" },
   },
   { timestamps: true }
 );
@@ -17,5 +17,4 @@ UserSchema.pre("save", async function (next) {
   next();
 });
 
-module.exports = mongoose.model("User", userSchema);
-
+module.exports = mongoose.model("User", UserSchema);
