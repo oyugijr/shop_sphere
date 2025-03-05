@@ -4,8 +4,8 @@ const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
-router.post("/", authMiddleware, createNotification);
-router.get("/", authMiddleware, getUserNotifications);
-router.put("/:id/read", authMiddleware, markNotificationAsRead);
+router.post("/send", authMiddleware, createNotification);
+router.get("/:userId", authMiddleware, getUserNotifications);
+router.patch("/:id/read", authMiddleware, markNotificationAsRead);
 
 module.exports = router;

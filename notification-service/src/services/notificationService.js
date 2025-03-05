@@ -1,27 +1,14 @@
-// const notificationRepository = require("../repositories/notificationRepository");
-// const sendEmail = require("../utils/sendEmail");
-
-// const processNotification = async (notification) => {
-//   try {
-//     if (notification.type === "email") {
-//       await sendEmail(notification.userId, notification.message);
-//     }
-//     notification.status = "sent";
-//     await notification.save();
-//   } catch (error) {
-//     notification.status = "failed";
-//     await notification.save();
-//   }
-// };
-
-// module.exports = { processNotification };
-
 const notificationRepository = require("../repositories/notificationRepository");
 const queue = require("../config/queue");
 
 const sendNotification = async (userId, type, message) => {
   const notification = await notificationRepository.createNotification({ userId, type, message });
-  queue.add("sendEmail", { userId, message });
+
+  if (type === "email") queue.add("sendEmail", { userId, message });
+  if (type === "sms") queue.add("sendSMS", { userId, message });
+  if (type === "whatsapp") queue.add("sendWhatsApp", { userId, message });
+
+  // queue.add("sendEmail", { userId, message });
   return notification;
 };
 
