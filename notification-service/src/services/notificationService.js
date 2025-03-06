@@ -1,16 +1,20 @@
 const notificationRepository = require("../repositories/notificationRepository");
-const queue = require("../config/queue");
+const { sendEmail, sendSMS, sendWhatsApp } = require("../utils/brevoService");
 
-const sendNotification = async (userId, type, message) => {
+
+const sendNotification = async (userId, type, contact, message) => {
   const notification = await notificationRepository.createNotification({ userId, type, message });
 
-  if (type === "email") queue.add("sendEmail", { userId, message });
-  if (type === "sms") queue.add("sendSMS", { userId, message });
-  if (type === "whatsapp") queue.add("sendWhatsApp", { userId, message });
+  try {
+    if (type === "email") await sendEmail(contact, "New Notification", message);
+    if (type === "sms") await sendSMS(contact, message);
+    if (type === "whatsapp") await sendWhatsApp(contact, message);
+  } catch (error) {
+    console.error("Notification failed:", error.message);
+  }
 
-  // queue.add("sendEmail", { userId, message });
   return notification;
-};
+}
 
 const getUserNotifications = async (userId) => {
   return await notificationRepository.getUserNotifications(userId);
@@ -21,4 +25,3 @@ const markNotificationAsRead = async (id) => {
 };
 
 module.exports = { sendNotification, getUserNotifications, markNotificationAsRead };
-
