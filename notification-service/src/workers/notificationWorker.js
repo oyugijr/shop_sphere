@@ -10,8 +10,20 @@
 
 // module.exports = notificationWorker;
 
-const queue = require("../config/queue");
+const sendEmail = require("../utils/sendEmail");
+const sendSMS = require("../utils/sendSMS");
+const sendWhatsApp = require("../utils/sendWhatsApp");
 
-queue.process(async (job) => {
-  console.log("Processing job:", job.data);
-});
+const processEmail = async (job) => {
+  await sendEmail(job.data.userId, job.data.message);
+};
+
+const processSMS = async (job) => {
+  await sendSMS(job.data.userId, job.data.message);
+};
+
+const processWhatsApp = async (job) => {
+  await sendWhatsApp(job.data.userId, job.data.message);
+};
+
+module.exports = { processEmail, processSMS, processWhatsApp };
