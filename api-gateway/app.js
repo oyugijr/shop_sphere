@@ -18,6 +18,7 @@ app.use("/orders", orderRoute);
 
 app.get("/", (req, res) => res.send("API Gateway is Running"));
 
+// initializes the services
 const services = {
     user: "http://user-service:5001",
     product: "http://product-service:5002",
