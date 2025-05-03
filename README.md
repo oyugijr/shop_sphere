@@ -15,7 +15,7 @@ This project is a microservices-based online store system, designed for scalabil
   
 - **`order-service/`**: Handles order processing, including placing orders, tracking their status, and managing customer order history.
   
-- **`payment-service/`**: Ensures secure and reliable payment processing, supporting various payment methods (credit card, PayPal, etc.).
+- **`payment-service/`**: Ensures secure and reliable payment processing, supporting various payment methods (credit card, PayPal, etc.).Most probably stripe
   
 - **`notification-service/`**: Manages notifications such as email or push notifications for order updates, promotions, and user activity.
   
@@ -34,3 +34,4 @@ To get started with the project, clone this repository and run the following com
 ```bash
 docker-compose up
 ```
+Enjoy 
