@@ -6,11 +6,24 @@ const { createProxyMiddleware } = require("http-proxy-middleware");
 const userRoutes = require("./src/routes/userRoutes");
 const productRoutes = require("./src/routes/productRoutes");
 const orderRoutes = require("./src/routes/orderRoutes");
+const errorHandler = require("./src/middlewares/errorHandler");
+const requestLogger = require("./src/middlewares/requestLogger");
+const rateLimiter = require("./src/middlewares/rateLimiter");
 
 const app = express();
-app.use(cors());
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(morgan("dev"));
+app.use(requestLogger);
+
+// Apply rate limiting to all routes
+app.use(rateLimiter(60000, 100)); // 100 requests per minute
 
 // Routes
 app.use("/users", userRoutes);
@@ -36,9 +49,10 @@ const services = {
   app.use("/api/products", createProxyMiddleware({ target: services.product, changeOrigin: true }));
   app.use("/api/orders", createProxyMiddleware({ target: services.order, changeOrigin: true }));
   
+  // Error handling middleware (should be last)
+  app.use(errorHandler);
+  
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => console.log(`API Gateway running on port ${PORT}`));
-
-
 
 module.exports = app;
