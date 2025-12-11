@@ -19,7 +19,7 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGO_URI=mongodb+srv://Oyugi:Ste10103oyugi@cluster0.lzhig.mongodb.net/shopSphere?retryWrites=true&w=majority&appName=Cluster0
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/shopSphere}
     networks:
       - shopsphere-network
     restart: unless-stopped
@@ -32,21 +32,36 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGO_URI=mongodb+srv://Oyugi:Ste10103oyugi@cluster0.lzhig.mongodb.net/shopSphere?retryWrites=true&w=majority&appName=Cluster0
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/shopSphere}
     networks:
       - shopsphere-network
     restart: unless-stopped
 
   order-service:
     build: ./order-service
+    container_name: shopsphere-order-service
     ports:
       - "5003:5003"
     depends_on:
       - mongodb
     environment:
-      - MONGO_URI=mongodb+srv://Oyugi:Ste10103oyugi@cluster0.lzhig.mongodb.net/shopSphere?retryWrites=true&w=majority&appName=Cluster0
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/shopSphere}
     networks:
       - shopsphere-network
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    container_name: shopsphere-notification-service
+    ports:
+      - "5004:5004"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/shopSphere}
+    networks:
+      - shopsphere-network
+    restart: unless-stopped
 
 
   mongodb:

@@ -10,9 +10,14 @@ connectDB();
 const app = express();
 app.use(express.json());
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "healthy", service: "notification-service" });
+});
+
 app.use("/api/notifications", notificationRoutes);
 
-const PORT = process.env.PORT || 5003;
+const PORT = process.env.PORT || 5004;
 app.listen(PORT, () => console.log(`Notification Service running on port ${PORT}`));
 
 module.exports = app;
