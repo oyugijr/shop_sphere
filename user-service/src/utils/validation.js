@@ -12,13 +12,24 @@ const validatePassword = (password) => {
 
 const sanitizeInput = (input) => {
   if (typeof input === 'string') {
-    // Remove potential XSS vectors - basic sanitization
-    // For production, consider using a library like 'validator' or 'dompurify'
-    return input
-      .replace(/[<>]/g, '') // Remove angle brackets
-      .replace(/javascript:/gi, '') // Remove javascript: protocol
-      .replace(/on\w+=/gi, '') // Remove event handlers
-      .trim();
+    // Remove potential XSS vectors - comprehensive sanitization
+    // Note: For production, consider using a library like 'validator' or 'dompurify'
+    let sanitized = input;
+    
+    // Remove dangerous protocols
+    const dangerousProtocols = ['javascript:', 'data:', 'vbscript:'];
+    dangerousProtocols.forEach(protocol => {
+      const regex = new RegExp(protocol, 'gi');
+      sanitized = sanitized.replace(regex, '');
+    });
+    
+    // Remove event handlers more thoroughly
+    sanitized = sanitized.replace(/\bon\w+\s*=/gi, '');
+    
+    // Remove angle brackets to prevent HTML injection
+    sanitized = sanitized.replace(/[<>]/g, '');
+    
+    return sanitized.trim();
   }
   return input;
 };
