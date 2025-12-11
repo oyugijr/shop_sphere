@@ -9,8 +9,12 @@ const orderRoutes = require("./src/routes/orderRoutes");
 const errorHandler = require("./src/middlewares/errorHandler");
 const requestLogger = require("./src/middlewares/requestLogger");
 const rateLimiter = require("./src/middlewares/rateLimiter");
+const securityHeaders = require("./src/middlewares/securityHeaders");
 
 const app = express();
+
+// Security headers
+app.use(securityHeaders);
 
 // CORS configuration
 app.use(cors({
@@ -18,7 +22,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Limit request body size
 app.use(morgan("dev"));
 app.use(requestLogger);
 
