@@ -3,15 +3,22 @@ const validateEmail = (email) => {
   return emailRegex.test(email);
 };
 
+const MIN_PASSWORD_LENGTH = 6;
+
 const validatePassword = (password) => {
-  // At least 8 characters, one uppercase, one lowercase, one number
-  return password && password.length >= 6;
+  // At least 6 characters minimum
+  return password && password.length >= MIN_PASSWORD_LENGTH;
 };
 
 const sanitizeInput = (input) => {
   if (typeof input === 'string') {
-    // Remove potential XSS vectors
-    return input.replace(/[<>]/g, '').trim();
+    // Remove potential XSS vectors - basic sanitization
+    // For production, consider using a library like 'validator' or 'dompurify'
+    return input
+      .replace(/[<>]/g, '') // Remove angle brackets
+      .replace(/javascript:/gi, '') // Remove javascript: protocol
+      .replace(/on\w+=/gi, '') // Remove event handlers
+      .trim();
   }
   return input;
 };
@@ -28,7 +35,7 @@ const validateUserRegistration = (data) => {
   }
 
   if (!data.password || !validatePassword(data.password)) {
-    errors.push('Password must be at least 6 characters long');
+    errors.push(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
   }
 
   return {

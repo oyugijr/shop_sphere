@@ -1,6 +1,12 @@
 const sanitizeInput = (input) => {
   if (typeof input === 'string') {
-    return input.replace(/[<>]/g, '').trim();
+    // Remove potential XSS vectors - basic sanitization
+    // For production, consider using a library like 'validator' or 'dompurify'
+    return input
+      .replace(/[<>]/g, '') // Remove angle brackets
+      .replace(/javascript:/gi, '') // Remove javascript: protocol
+      .replace(/on\w+=/gi, '') // Remove event handlers
+      .trim();
   }
   return input;
 };
