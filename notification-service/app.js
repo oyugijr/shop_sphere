@@ -7,6 +7,9 @@ const notificationQueue = require("./src/config/queue");
 dotenv.config();
 connectDB();
 
+// Initialize notification worker
+require("./src/workers/notificationWorker");
+
 const app = express();
 app.use(express.json());
 
@@ -18,6 +21,9 @@ app.get("/health", (req, res) => {
 app.use("/api/notifications", notificationRoutes);
 
 const PORT = process.env.PORT || 5004;
-app.listen(PORT, () => console.log(`Notification Service running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Notification Service running on port ${PORT}`);
+  console.log(`Notification worker initialized and listening for events`);
+});
 
 module.exports = app;

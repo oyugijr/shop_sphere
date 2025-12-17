@@ -5,6 +5,20 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
+[![Security: CodeQL](https://img.shields.io/badge/Security-CodeQL%20Verified-brightgreen.svg)](https://github.com/oyugijr/shop_sphere/security)
+
+## 📊 Project Status
+
+| Component | Status | Coverage |
+|-----------|--------|----------|
+| Core Services | ✅ Implemented | 60% |
+| Infrastructure | ✅ Implemented | 75% |
+| Testing | ⚠️ Partial | 5% |
+| CI/CD | ❌ Not Started | 0% |
+| Documentation | ✅ Complete | 100% |
+| **Overall** | 🔨 **In Development** | **~40%** |
+
+> 📋 **See [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) for detailed analysis**
 
 ## 🚀 Features
 
@@ -26,8 +40,9 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 | **User Service** | 5001 | User authentication, registration, and profile management |
 | **Product Service** | 5002 | Product catalog and inventory management |
 | **Order Service** | 5003 | Order creation, tracking, and management |
-| **Notification Service** | 5004 | Email and push notifications |
+| **Notification Service** | 5004 | Email and push notifications with queue-based processing |
 | **MongoDB** | 27017 | Database for all services |
+| **Redis** | 6379 | Message queue and caching for notification service |
 | **MongoDB Express** | 8081 | Web-based MongoDB admin interface |
 
 ## 🏗️ Architecture
@@ -35,7 +50,7 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 ```
 Client → API Gateway → [User/Product/Order Services] → MongoDB
                     ↓
-              Notification Service → Redis Queue
+              Notification Service → Redis Queue → Email/SMS/WhatsApp
 ```
 
 For detailed architecture information, see [Architecture Documentation](./docs/ARCHITECTURE.md).
@@ -89,9 +104,22 @@ docker-compose down -v
 
 ## 📚 Documentation
 
+### Getting Started
+- **[Quick Reference](./QUICK_REFERENCE.md)** - Fast setup and common tasks
 - **[Setup Guide](./docs/SETUP.md)** - Detailed installation and configuration
+
+### Technical Documentation
 - **[API Documentation](./docs/API.md)** - Complete API reference
 - **[Architecture Guide](./docs/ARCHITECTURE.md)** - System design and data flow
+
+### Project Status & Planning
+- **[Implementation Status](./IMPLEMENTATION_STATUS.md)** - What's implemented, partially done, and missing
+- **[Development Roadmap](./ROADMAP.md)** - Prioritized implementation plan
+- **[Review Summary](./REVIEW_SUMMARY.md)** - Latest project review findings
+
+### Contributing
+- **[Contributing Guidelines](./CONTRIBUTING.md)** - How to contribute
+- **[Enhancement History](./ENHANCEMENTS.md)** - Previous improvements log
 
 ## 🔒 Security Features
 
