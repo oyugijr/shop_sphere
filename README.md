@@ -26,8 +26,9 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 | **User Service** | 5001 | User authentication, registration, and profile management |
 | **Product Service** | 5002 | Product catalog and inventory management |
 | **Order Service** | 5003 | Order creation, tracking, and management |
-| **Notification Service** | 5004 | Email and push notifications |
+| **Notification Service** | 5004 | Email and push notifications with queue-based processing |
 | **MongoDB** | 27017 | Database for all services |
+| **Redis** | 6379 | Message queue and caching for notification service |
 | **MongoDB Express** | 8081 | Web-based MongoDB admin interface |
 
 ## 🏗️ Architecture
@@ -35,7 +36,7 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 ```
 Client → API Gateway → [User/Product/Order Services] → MongoDB
                     ↓
-              Notification Service → Redis Queue
+              Notification Service → Redis Queue → Email/SMS/WhatsApp
 ```
 
 For detailed architecture information, see [Architecture Documentation](./docs/ARCHITECTURE.md).
