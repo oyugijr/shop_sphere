@@ -7,7 +7,8 @@ const sendNotification = async (req, res) => {
     const notification = await notificationService.sendNotification(req.user.id, type, contact, message);
     res.status(201).json(notification);
   } catch (error) {
-    res.status(500).json({ error: "Failed to send notification" });
+    console.error("Error sending notification:", error);
+    res.status(500).json({ error: "Failed to send notification", details: error.message });
   }
 };
 
@@ -17,7 +18,8 @@ const getUserNotifications = async (req, res) => {
     const notifications = await notificationService.getUserNotifications(req.user.id);
     res.json(notifications);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch notifications" });
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({ error: "Failed to fetch notifications", details: error.message });
   }
 };
 
@@ -25,9 +27,13 @@ const getUserNotifications = async (req, res) => {
 const markAsRead = async (req, res) => {
   try {
     const notification = await notificationService.markNotificationAsRead(req.params.id);
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
     res.json(notification);
   } catch (error) {
-    res.status(500).json({ error: "Failed to mark notification as read" });
+    console.error("Error marking notification as read:", error);
+    res.status(500).json({ error: "Failed to mark notification as read", details: error.message });
   }
 };
 

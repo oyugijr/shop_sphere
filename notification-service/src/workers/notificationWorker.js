@@ -10,12 +10,12 @@ redisSub.subscribe("notifications", (err) => {
 // Listen for new events
 redisSub.on("message", async (channel, message) => {
   if (channel === "notifications") {
-    const { userId, type, contact, message: notificationMessage } = JSON.parse(message);
+    const { userId, type, contact, message: content } = JSON.parse(message);
 
     try {
-      if (type === "email") await sendEmail(contact, "New Notification", notificationMessage);
-      if (type === "sms") await sendSMS(contact, notificationMessage);
-      if (type === "whatsapp") await sendWhatsApp(contact, notificationMessage);
+      if (type === "email") await sendEmail(contact, "New Notification", content);
+      if (type === "sms") await sendSMS(contact, content);
+      if (type === "whatsapp") await sendWhatsApp(contact, content);
       console.log(`Notification sent via ${type} to ${contact}`);
     } catch (error) {
       console.error("Error sending notification:", error.message);

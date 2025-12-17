@@ -72,6 +72,8 @@ services:
     container_name: shopsphere-redis
     restart: unless-stopped
     ports:
+      # Note: In production, remove this port mapping or enable Redis AUTH
+      # for security. For development, exposed for debugging.
       - "6379:6379"
     networks:
       - shopsphere-network
