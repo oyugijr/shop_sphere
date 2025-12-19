@@ -8,7 +8,12 @@
     "dev": "nodemon app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["microservices", "product-catalog", "inventory", "ecommerce"],
+  "keywords": [
+    "microservices",
+    "product-catalog",
+    "inventory",
+    "ecommerce"
+  ],
   "author": "Oyugi Jr",
   "license": "MIT",
   "type": "commonjs",
@@ -17,7 +22,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mongoose": "^8.10.1"
+    "mongoose": "^8.10.1",
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
