@@ -1,7 +1,7 @@
 {
-  "name": "api-gateway",
+  "name": "cart-service",
   "version": "1.0.0",
-  "description": "API Gateway for ShopSphere microservices architecture",
+  "description": "Shopping cart management service for ShopSphere",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -9,7 +9,7 @@
     "test": "jest --coverage",
     "test:watch": "jest --watch"
   },
-  "keywords": ["microservices", "api-gateway", "proxy", "ecommerce"],
+  "keywords": ["microservices", "cart", "shopping-cart", "ecommerce"],
   "author": "Oyugi Jr",
   "license": "MIT",
   "type": "commonjs",
@@ -17,11 +17,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "http-proxy-middleware": "^3.0.3",
-    "morgan": "^1.10.0"
+    "mongoose": "^8.11.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.1.4",
     "nodemon": "^3.1.9",
     "supertest": "^7.0.0"
   }
