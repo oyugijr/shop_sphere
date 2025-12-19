@@ -1,0 +1,29 @@
+{
+  "name": "payment-service",
+  "version": "1.0.0",
+  "description": "Payment processing service for ShopSphere",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch"
+  },
+  "keywords": ["microservices", "payment", "stripe", "ecommerce"],
+  "author": "Oyugi Jr",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.11.0",
+    "stripe": "^14.10.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.1.4",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.0.0"
+  }
+}
