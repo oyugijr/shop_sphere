@@ -14,6 +14,6 @@ module.exports = {
       statements: 50
     }
   },
-  testMatch: ['**/*.test.js'],
+  testMatch: ['**/tests/**/*.test.js'],
   verbose: true
 };

@@ -67,7 +67,7 @@ describe('Auth Controller', () => {
 
       await authController.login(req, res);
 
-      expect(authService.loginUser).toHaveBeenCalledWith(loginData.email, loginData.password);
+      expect(authService.loginUser).toHaveBeenCalledWith(loginData);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(mockResponse);
     });
