@@ -59,8 +59,8 @@ api-gateway/
 **Security Headers Implemented:**
 - X-Frame-Options: DENY
 - X-Content-Type-Options: nosniff
-- X-XSS-Protection: 1
-- Content-Security-Policy
+- X-XSS-Protection: 0 (deprecated header, removed/disabled)
+- Content-Security-Policy (primary XSS protection)
 - Strict-Transport-Security (production)
 - Referrer-Policy
 - Permissions-Policy
@@ -1106,14 +1106,20 @@ N/A - Service not implemented
 ### Timeline to Production
 
 **Minimum Viable Product (MVP):**
-- Fix order service pricing: 2 days
-- Implement cart service: 7-11 days
+- Fix order service pricing: 2-3 days
+- Implement cart service: 7-10 days
 - Implement payment service: 10-14 days
-- Add critical features: 10 days
-- **Total: 12 weeks**
+- Add critical features (pagination, stock validation, templates): 10-12 days
+- Testing and bug fixes: 10-12 days
+- **Total: ~6-8 weeks (30-40 working days)**
 
-**Production-Ready:**
-- MVP + monitoring + CI/CD + testing: 16 weeks
+**Production-Ready (with monitoring, CI/CD, full testing):**
+- MVP tasks: 6-8 weeks
+- Monitoring & logging setup: 1 week
+- CI/CD pipeline: 1 week
+- Comprehensive testing & security audit: 2-3 weeks
+- Performance optimization: 1-2 weeks
+- **Total: ~12-16 weeks**
 
 ### Final Verdict
 
@@ -1126,7 +1132,7 @@ The platform needs:
 4. Monitoring and logging
 5. Comprehensive testing
 
-**Earliest production deployment: 12 weeks from now**
+**Earliest production deployment: 12-16 weeks from now (with dedicated team)**
 
 ---
 
