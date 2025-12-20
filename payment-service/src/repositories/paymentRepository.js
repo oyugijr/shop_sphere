@@ -12,6 +12,10 @@ const findByMpesaCheckoutId = async (mpesaCheckoutRequestId) => {
   return await Payment.findOne({ mpesaCheckoutRequestId });
 };
 
+const findByPayPalOrderId = async (paypalOrderId) => {
+  return await Payment.findOne({ paypalOrderId });
+};
+
 const findByOrderId = async (orderId, provider = null) => {
   const query = { orderId };
   if (provider) {
@@ -37,6 +41,14 @@ const updateStatus = async (stripePaymentIntentId, status, additionalData = {}) 
 const updateByCheckoutId = async (mpesaCheckoutRequestId, status, additionalData = {}) => {
   return await Payment.findOneAndUpdate(
     { mpesaCheckoutRequestId },
+    { status, ...additionalData },
+    { new: true }
+  );
+};
+
+const updateByPayPalOrderId = async (paypalOrderId, status, additionalData = {}) => {
+  return await Payment.findOneAndUpdate(
+    { paypalOrderId },
     { status, ...additionalData },
     { new: true }
   );
@@ -86,10 +98,12 @@ module.exports = {
   create,
   findByStripeId,
   findByMpesaCheckoutId,
+  findByPayPalOrderId,
   findByOrderId,
   findByUserId,
   updateStatus,
   updateByCheckoutId,
+  updateByPayPalOrderId,
   updatePaymentMethod,
   addRefund,
   getPaymentStats,

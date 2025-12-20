@@ -14,7 +14,7 @@ const PaymentSchema = new mongoose.Schema(
     },
     provider: {
       type: String,
-      enum: ['stripe', 'mpesa'],
+      enum: ['stripe', 'mpesa', 'paypal'],
       required: true,
       default: 'stripe',
       index: true,
@@ -41,6 +41,25 @@ const PaymentSchema = new mongoose.Schema(
       sparse: true,
     },
     phoneNumber: {
+      type: String,
+      default: null,
+    },
+    // PayPal fields
+    paypalOrderId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    paypalCaptureId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    paypalPayerEmail: {
+      type: String,
+      default: null,
+    },
+    paypalPayerId: {
       type: String,
       default: null,
     },
@@ -100,6 +119,9 @@ PaymentSchema.pre('save', function(next) {
   }
   if (this.provider === 'mpesa' && !this.mpesaCheckoutRequestId) {
     return next(new Error('mpesaCheckoutRequestId is required for M-Pesa payments'));
+  }
+  if (this.provider === 'paypal' && !this.paypalOrderId) {
+    return next(new Error('paypalOrderId is required for PayPal payments'));
   }
   next();
 });
