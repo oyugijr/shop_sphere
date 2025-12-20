@@ -8,8 +8,16 @@ const findByStripeId = async (stripePaymentIntentId) => {
   return await Payment.findOne({ stripePaymentIntentId });
 };
 
-const findByOrderId = async (orderId) => {
-  return await Payment.findOne({ orderId }).sort({ createdAt: -1 });
+const findByMpesaCheckoutId = async (mpesaCheckoutRequestId) => {
+  return await Payment.findOne({ mpesaCheckoutRequestId });
+};
+
+const findByOrderId = async (orderId, provider = null) => {
+  const query = { orderId };
+  if (provider) {
+    query.provider = provider;
+  }
+  return await Payment.findOne(query).sort({ createdAt: -1 });
 };
 
 const findByUserId = async (userId, limit = 50) => {
@@ -21,6 +29,14 @@ const findByUserId = async (userId, limit = 50) => {
 const updateStatus = async (stripePaymentIntentId, status, additionalData = {}) => {
   return await Payment.findOneAndUpdate(
     { stripePaymentIntentId },
+    { status, ...additionalData },
+    { new: true }
+  );
+};
+
+const updateByCheckoutId = async (mpesaCheckoutRequestId, status, additionalData = {}) => {
+  return await Payment.findOneAndUpdate(
+    { mpesaCheckoutRequestId },
     { status, ...additionalData },
     { new: true }
   );
@@ -58,7 +74,7 @@ const getPaymentStats = async (userId, startDate, endDate) => {
     { $match: match },
     {
       $group: {
-        _id: '$status',
+        _id: { provider: '$provider', status: '$status' },
         count: { $sum: 1 },
         totalAmount: { $sum: '$amount' },
       },
@@ -69,9 +85,11 @@ const getPaymentStats = async (userId, startDate, endDate) => {
 module.exports = {
   create,
   findByStripeId,
+  findByMpesaCheckoutId,
   findByOrderId,
   findByUserId,
   updateStatus,
+  updateByCheckoutId,
   updatePaymentMethod,
   addRefund,
   getPaymentStats,

@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./src/config/db');
 const paymentRoutes = require('./src/routes/paymentRoutes');
+const mpesaRoutes = require('./src/routes/mpesaRoutes');
 const errorHandler = require('./src/middlewares/errorHandler');
 const verifyWebhookSignature = require('./src/middlewares/webhookMiddleware');
 
@@ -20,12 +21,19 @@ app.use(cors({
   credentials: true,
 }));
 
-// Webhook route with raw body (must be before express.json())
+// Webhook routes with raw body (must be before express.json())
 app.post(
   '/api/payments/webhook',
   express.raw({ type: 'application/json' }),
   verifyWebhookSignature,
   require('./src/controllers/paymentController').handleWebhook
+);
+
+// M-Pesa callback (needs raw body for verification)
+app.post(
+  '/api/mpesa/callback',
+  express.json(),
+  require('./src/controllers/mpesaController').handleMpesaCallback
 );
 
 // Body parser middleware
@@ -39,11 +47,13 @@ app.get('/health', (req, res) => {
     service: 'payment-service',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    providers: ['stripe', 'mpesa'],
   });
 });
 
 // API routes
 app.use('/api/payments', paymentRoutes);
+app.use('/api/mpesa', mpesaRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -61,6 +71,7 @@ const PORT = process.env.PORT || 5005;
 const server = app.listen(PORT, () => {
   console.log(`💳 Payment Service running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`💰 Payment Providers: Stripe, M-Pesa`);
 });
 
 // Graceful shutdown

@@ -12,11 +12,37 @@ const PaymentSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    provider: {
+      type: String,
+      enum: ['stripe', 'mpesa'],
+      required: true,
+      default: 'stripe',
+      index: true,
+    },
+    // Stripe fields
     stripePaymentIntentId: {
       type: String,
-      required: true,
-      unique: true,
+      sparse: true,
       index: true,
+    },
+    // M-Pesa fields
+    mpesaCheckoutRequestId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    mpesaTransactionId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    mpesaReceiptNumber: {
+      type: String,
+      sparse: true,
+    },
+    phoneNumber: {
+      type: String,
+      default: null,
     },
     amount: {
       type: Number,
@@ -65,5 +91,17 @@ const PaymentSchema = new mongoose.Schema(
 // Index for efficient queries
 PaymentSchema.index({ orderId: 1, status: 1 });
 PaymentSchema.index({ userId: 1, createdAt: -1 });
+PaymentSchema.index({ provider: 1, status: 1 });
+
+// Validation: require provider-specific fields
+PaymentSchema.pre('save', function(next) {
+  if (this.provider === 'stripe' && !this.stripePaymentIntentId) {
+    return next(new Error('stripePaymentIntentId is required for Stripe payments'));
+  }
+  if (this.provider === 'mpesa' && !this.mpesaCheckoutRequestId) {
+    return next(new Error('mpesaCheckoutRequestId is required for M-Pesa payments'));
+  }
+  next();
+});
 
 module.exports = mongoose.model("Payment", PaymentSchema);

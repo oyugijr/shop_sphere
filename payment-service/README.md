@@ -1,16 +1,29 @@
 # Payment Service
 
-Production-ready payment processing service for ShopSphere using Stripe.
+Production-ready payment processing service for ShopSphere supporting **Stripe** and **M-Pesa**.
 
 ## Features
 
 - 💳 **Stripe Integration**: Full integration with Stripe Payment Intents API
+- 📱 **M-Pesa Integration**: Complete Safaricom M-Pesa Daraja API integration (STK Push & B2C)
 - 🔒 **Secure**: JWT authentication, webhook signature verification
 - 📊 **Complete Payment Lifecycle**: Create, confirm, cancel, and refund payments
-- 🔔 **Webhook Support**: Real-time payment status updates via Stripe webhooks
+- 🔔 **Webhook Support**: Real-time payment status updates via webhooks
 - 📈 **Payment Analytics**: Track payment statistics and history
-- 🧪 **Well-Tested**: Comprehensive test coverage
+- 🧪 **Well-Tested**: Comprehensive test coverage (32 tests passing)
 - 🐳 **Docker Ready**: Containerized for easy deployment
+
+## Supported Payment Methods
+
+### 1. Stripe (International Payments)
+- Credit/Debit cards
+- Digital wallets (Apple Pay, Google Pay)
+- All Stripe-supported payment methods
+
+### 2. M-Pesa (Kenya Mobile Money)
+- STK Push (Lipa Na M-Pesa Online)
+- B2C payments for refunds
+- Real-time callback notifications
 
 ## API Endpoints
 
@@ -75,6 +88,150 @@ Authorization: Bearer <token>
 #### Refund Payment
 ```bash
 POST /api/payments/:paymentIntentId/refund
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "amount": 5000  // Optional, defaults to full refund
+}
+```
+
+### Stripe Webhooks
+
+#### Webhook Endpoint
+```bash
+POST /api/payments/webhook
+Stripe-Signature: <signature>
+Content-Type: application/json
+
+# Webhook events handled:
+# - payment_intent.succeeded
+# - payment_intent.payment_failed
+# - payment_intent.canceled
+# - payment_intent.processing
+# - charge.refunded
+```
+
+## M-Pesa API Endpoints
+
+### M-Pesa Payment Management
+
+#### Initiate M-Pesa Payment (STK Push)
+```bash
+POST /api/mpesa/initiate
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "orderId": "507f1f77bcf86cd799439011",
+  "amount": 1000,  // Amount in KES
+  "phoneNumber": "254712345678",  // Kenyan phone number
+  "metadata": {
+    "productName": "Premium Service"
+  }
+}
+
+Response:
+{
+  "success": true,
+  "message": "STK Push sent successfully. Please check your phone to complete payment.",
+  "data": {
+    "checkoutRequestId": "ws_CO_DMZ_12345_12345678",
+    "merchantRequestId": "1234-5678-9",
+    "responseCode": "0",
+    "responseDescription": "Success. Request accepted for processing",
+    "customerMessage": "Success. Request accepted for processing"
+  }
+}
+```
+
+#### Query M-Pesa Payment Status
+```bash
+GET /api/mpesa/query/:checkoutRequestId
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "data": {
+    "_id": "payment_id",
+    "orderId": "507f1f77bcf86cd799439011",
+    "provider": "mpesa",
+    "mpesaCheckoutRequestId": "ws_CO_DMZ_12345_12345678",
+    "mpesaReceiptNumber": "NLJ7RT61SV",
+    "amount": 1000,
+    "currency": "kes",
+    "status": "succeeded",
+    "phoneNumber": "254712345678"
+  }
+}
+```
+
+#### Get M-Pesa Payment by Order ID
+```bash
+GET /api/mpesa/order/:orderId
+Authorization: Bearer <token>
+```
+
+#### Refund M-Pesa Payment (Admin Only)
+```bash
+POST /api/mpesa/:checkoutRequestId/refund
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "amount": 500  // Optional, defaults to full refund
+}
+```
+
+### M-Pesa Callback
+
+#### Callback Endpoint (Public)
+```bash
+POST /api/mpesa/callback
+Content-Type: application/json
+
+# This endpoint receives callbacks from Safaricom
+# No authentication required - called by M-Pesa servers
+# Updates payment status automatically based on transaction result
+```
+
+## Phone Number Formats
+
+M-Pesa accepts Kenyan phone numbers in multiple formats:
+- `254712345678` (international format)
+- `0712345678` (local format with leading zero)
+- `712345678` (without country code or zero)
+
+All formats are automatically converted to `254XXXXXXXXX` format.
+
+GET /api/payments/status/:paymentIntentId
+Authorization: Bearer <token>
+```
+
+#### Get Payment by Order ID
+```bash
+GET /api/payments/order/:orderId
+Authorization: Bearer <token>
+```
+
+#### Get User Payment History
+```bash
+GET /api/payments/user?limit=50
+Authorization: Bearer <token>
+```
+
+#### Get Payment Statistics
+```bash
+GET /api/payments/stats?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer <token>
+```
+
+### Admin Operations
+
+#### Refund Payment
+```bash
+POST /api/payments/:paymentIntentId/refund
 Authorization: Bearer <admin-token>
 Content-Type: application/json
 
@@ -112,6 +269,16 @@ JWT_SECRET=your_jwt_secret
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
+# M-Pesa Configuration
+MPESA_ENVIRONMENT=sandbox  # or production
+MPESA_CONSUMER_KEY=your_consumer_key
+MPESA_CONSUMER_SECRET=your_consumer_secret
+MPESA_SHORTCODE=174379  # Your business shortcode
+MPESA_PASSKEY=your_passkey
+MPESA_CALLBACK_URL=https://your-domain.com/api/mpesa/callback
+MPESA_INITIATOR_NAME=testapi  # For B2C refunds
+MPESA_SECURITY_CREDENTIAL=your_security_credential  # For B2C refunds
+
 # Server Configuration
 PORT=5005
 NODE_ENV=production
@@ -134,8 +301,41 @@ npm install
    STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
    ```
 
-### 3. Configure Webhooks
+### 3. Configure M-Pesa
 
+1. **Create Daraja Account**
+   - Go to [Safaricom Daraja Portal](https://developer.safaricom.co.ke)
+   - Create an account and log in
+   - Create a new app
+
+2. **Get Credentials**
+   - Consumer Key and Consumer Secret from your app
+   - Business Shortcode (Lipa Na M-Pesa Online)
+   - Passkey (from Daraja sandbox or production credentials)
+
+3. **Register Callback URLs**
+   ```bash
+   # Your callback URL must be publicly accessible
+   MPESA_CALLBACK_URL=https://your-domain.com/api/mpesa/callback
+   ```
+
+4. **Test with Sandbox**
+   ```bash
+   MPESA_ENVIRONMENT=sandbox
+   MPESA_CONSUMER_KEY=<sandbox_consumer_key>
+   MPESA_CONSUMER_SECRET=<sandbox_consumer_secret>
+   MPESA_SHORTCODE=174379  # Sandbox shortcode
+   MPESA_PASSKEY=<sandbox_passkey>
+   ```
+
+5. **Sandbox Test Credentials**
+   - Test Phone Number: `254708374149`
+   - Test Amount: Any amount between 1-70,000 KES
+   - PIN: `0000` (for sandbox only)
+
+### 4. Configure Webhooks
+
+**Stripe:**
 1. Go to [Stripe Webhooks](https://dashboard.stripe.com/webhooks)
 2. Add endpoint: `https://your-domain.com/api/payments/webhook`
 3. Select events to listen for:
@@ -146,7 +346,11 @@ npm install
    - `charge.refunded`
 4. Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET`
 
-### 4. Start Service
+**M-Pesa:**
+- Callbacks are automatically handled at `/api/mpesa/callback`
+- Ensure this URL is publicly accessible and registered in Daraja portal
+- M-Pesa will send callbacks for payment status updates
+
 
 **Development:**
 ```bash
@@ -178,6 +382,8 @@ npm test -- --coverage
 
 ## Payment Flow
 
+### Stripe Payment Flow
+
 ### 1. Create Payment Intent
 Client requests to create a payment intent with order details:
 - Amount (in cents)
@@ -197,6 +403,68 @@ Stripe sends webhook events to update payment status in real-time:
 ### 4. Order Fulfillment
 Once payment succeeds, the order service is notified to fulfill the order.
 
+### M-Pesa Payment Flow (STK Push)
+
+### 1. Initiate STK Push
+Client requests M-Pesa payment:
+- Amount (in KES)
+- Phone number
+- Order ID
+
+### 2. STK Push Sent
+- Service sends STK Push to customer's phone
+- Customer receives prompt on their phone
+- Customer enters M-Pesa PIN to authorize payment
+
+### 3. Callback Received
+M-Pesa sends callback to service:
+- `ResultCode: 0` → Payment succeeded
+- `ResultCode: 1032` → Payment canceled by user
+- Other codes → Payment failed
+
+### 4. Status Update
+Payment status is automatically updated based on callback:
+- Success: Order can be fulfilled
+- Failed/Canceled: Customer can retry payment
+
+### 5. Order Fulfillment
+Once payment succeeds, the order service is notified to fulfill the order.
+
+## Multi-Provider Support
+
+The payment service supports both Stripe and M-Pesa simultaneously:
+
+- **Stripe**: For international payments (credit cards, digital wallets)
+- **M-Pesa**: For Kenya mobile money payments
+
+Choose provider based on:
+- Customer location (Kenya = M-Pesa option, International = Stripe)
+- Payment method preference
+- Currency (KES = M-Pesa, USD/EUR/etc = Stripe)
+
+## Payment Service Architecture
+
+```
+┌─────────────────┐
+│   Client App    │
+└────────┬────────┘
+         │
+    ┌────▼────────────────┐
+    │  Payment Service    │
+    │  (Express API)      │
+    └────┬────────────────┘
+         │
+    ┌────▼──────┬─────────┐
+    │           │         │
+┌───▼──────┐ ┌──▼─────┐  │
+│  Stripe  │ │ M-Pesa │  │
+│   API    │ │  API   │  │
+└──────────┘ └────────┘  │
+                      ┌──▼──────┐
+                      │ MongoDB │
+                      └─────────┘
+```
+
 ## Security Features
 
 - ✅ JWT authentication for all protected routes
@@ -214,21 +482,39 @@ Once payment succeeds, the order service is notified to fulfill the order.
 ### Payment Schema
 ```javascript
 {
-  orderId: ObjectId,           // Reference to order
-  userId: ObjectId,            // Reference to user
-  stripePaymentIntentId: String, // Stripe payment intent ID
-  amount: Number,              // Amount in dollars
-  currency: String,            // Currency code (e.g., 'usd')
-  status: String,              // pending, processing, succeeded, failed, canceled, refunded
-  paymentMethod: String,       // Payment method used
-  refundId: String,            // Stripe refund ID if refunded
-  refundAmount: Number,        // Refund amount if partial refund
-  metadata: Map,               // Additional metadata
-  errorMessage: String,        // Error message if failed
+  orderId: ObjectId,                    // Reference to order
+  userId: ObjectId,                     // Reference to user
+  provider: String,                     // 'stripe' or 'mpesa'
+  
+  // Stripe fields
+  stripePaymentIntentId: String,        // Stripe payment intent ID
+  
+  // M-Pesa fields
+  mpesaCheckoutRequestId: String,       // M-Pesa checkout request ID
+  mpesaTransactionId: String,           // M-Pesa transaction ID
+  mpesaReceiptNumber: String,           // M-Pesa receipt number
+  phoneNumber: String,                  // Customer phone number (M-Pesa)
+  
+  amount: Number,                       // Amount in base currency
+  currency: String,                     // Currency code (e.g., 'usd', 'kes')
+  status: String,                       // pending, processing, succeeded, failed, canceled, refunded
+  paymentMethod: String,                // Payment method used
+  refundId: String,                     // Refund ID if refunded
+  refundAmount: Number,                 // Refund amount if partial refund
+  metadata: Map,                        // Additional metadata
+  errorMessage: String,                 // Error message if failed
   createdAt: Date,
   updatedAt: Date
 }
 ```
+
+### Indexes
+- `{ orderId: 1, status: 1 }` - Query payments by order and status
+- `{ userId: 1, createdAt: -1 }` - User payment history
+- `{ provider: 1, status: 1 }` - Provider-specific queries
+- `{ stripePaymentIntentId: 1 }` - Stripe payment lookups (sparse)
+- `{ mpesaCheckoutRequestId: 1 }` - M-Pesa payment lookups (sparse)
+
 
 ## Health Check
 
