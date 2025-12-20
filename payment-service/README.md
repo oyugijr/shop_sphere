@@ -1,16 +1,17 @@
 # Payment Service
 
-Production-ready payment processing service for ShopSphere supporting **Stripe** and **M-Pesa**.
+Production-ready payment processing service for ShopSphere supporting **Stripe**, **M-Pesa**, and **PayPal**.
 
 ## Features
 
 - 💳 **Stripe Integration**: Full integration with Stripe Payment Intents API
 - 📱 **M-Pesa Integration**: Complete Safaricom M-Pesa Daraja API integration (STK Push & B2C)
+- 💰 **PayPal Integration**: Complete PayPal Orders API v2 integration
 - 🔒 **Secure**: JWT authentication, webhook signature verification
 - 📊 **Complete Payment Lifecycle**: Create, confirm, cancel, and refund payments
 - 🔔 **Webhook Support**: Real-time payment status updates via webhooks
 - 📈 **Payment Analytics**: Track payment statistics and history
-- 🧪 **Well-Tested**: Comprehensive test coverage (32 tests passing)
+- 🧪 **Well-Tested**: Comprehensive test coverage (49 tests passing)
 - 🐳 **Docker Ready**: Containerized for easy deployment
 
 ## Supported Payment Methods
@@ -24,6 +25,12 @@ Production-ready payment processing service for ShopSphere supporting **Stripe**
 - STK Push (Lipa Na M-Pesa Online)
 - B2C payments for refunds
 - Real-time callback notifications
+
+### 3. PayPal (Global Digital Payments)
+- PayPal account payments
+- Credit/Debit cards via PayPal
+- Multi-currency support
+- Buyer and seller protection
 
 ## API Endpoints
 
@@ -205,6 +212,157 @@ M-Pesa accepts Kenyan phone numbers in multiple formats:
 
 All formats are automatically converted to `254XXXXXXXXX` format.
 
+## PayPal API Endpoints
+
+### PayPal Payment Management
+
+#### Create PayPal Order
+```bash
+POST /api/paypal/create
+Authorization: ******
+Content-Type: application/json
+
+{
+  "orderId": "507f1f77bcf86cd799439011",
+  "amount": 99.99,  // Amount in base currency
+  "currency": "USD",  // USD, EUR, GBP, etc.
+  "metadata": {
+    "description": "Premium Product"
+  }
+}
+
+Response:
+{
+  "success": true,
+  "message": "PayPal order created successfully. Redirect customer to approval URL.",
+  "data": {
+    "paypalOrderId": "8XC74156MK4567890",
+    "status": "CREATED",
+    "approvalUrl": "https://www.paypal.com/checkoutnow?token=8XC74156MK4567890",
+    "payment": { ... }
+  }
+}
+```
+
+#### Capture PayPal Payment
+After customer approves payment on PayPal, capture the payment:
+```bash
+POST /api/paypal/:paypalOrderId/capture
+Authorization: ******
+
+Response:
+{
+  "success": true,
+  "message": "Payment captured successfully",
+  "data": {
+    "_id": "payment_id",
+    "provider": "paypal",
+    "paypalOrderId": "8XC74156MK4567890",
+    "paypalCaptureId": "5TY1234567890ABCD",
+    "paypalPayerEmail": "customer@example.com",
+    "status": "succeeded",
+    "amount": 99.99,
+    "currency": "usd"
+  }
+}
+```
+
+#### Get PayPal Payment Status
+```bash
+GET /api/paypal/status/:paypalOrderId
+Authorization: ******
+
+Response:
+{
+  "success": true,
+  "data": {
+    "_id": "payment_id",
+    "provider": "paypal",
+    "paypalOrderId": "8XC74156MK4567890",
+    "status": "succeeded",
+    "amount": 99.99
+  }
+}
+```
+
+#### Get PayPal Payment by Order ID
+```bash
+GET /api/paypal/order/:orderId
+Authorization: ******
+```
+
+#### Cancel PayPal Order
+```bash
+POST /api/paypal/:paypalOrderId/cancel
+Authorization: ******
+```
+
+#### Refund PayPal Payment (Admin Only)
+```bash
+POST /api/paypal/:paypalOrderId/refund
+Authorization: ******
+Content-Type: application/json
+
+{
+  "amount": 50.00  // Optional, defaults to full refund
+}
+
+Response:
+{
+  "success": true,
+  "message": "Refund processed successfully",
+  "data": {
+    "status": "refunded",
+    "refundId": "REFUND-123",
+    "refundAmount": 50.00
+  }
+}
+```
+
+## PayPal Payment Flow
+
+1. **Create Order**: Customer selects PayPal payment method
+2. **Redirect to PayPal**: Customer is redirected to approval URL
+3. **Customer Approves**: Customer logs into PayPal and approves payment
+4. **Capture Payment**: After approval, capture the payment
+5. **Order Fulfillment**: Once captured, fulfill the order
+
+**Frontend Integration Example:**
+```javascript
+// 1. Create PayPal order
+const response = await fetch('/api/paypal/create', {
+  method: 'POST',
+  headers: {
+    'Authorization': `******
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    orderId: '507f1f77bcf86cd799439011',
+    amount: 99.99,
+    currency: 'USD'
+  })
+});
+
+const { data } = await response.json();
+
+// 2. Redirect customer to PayPal
+window.location.href = data.approvalUrl;
+
+// 3. After customer approves and returns, capture payment
+// (typically handled by return URL callback)
+const captureResponse = await fetch(`/api/paypal/${data.paypalOrderId}/capture`, {
+  method: 'POST',
+  headers: {
+    'Authorization': `******
+  }
+});
+
+const { data: payment } = await captureResponse.json();
+if (payment.status === 'succeeded') {
+  // Payment successful, show confirmation
+}
+```
+
 GET /api/payments/status/:paymentIntentId
 Authorization: Bearer <token>
 ```
@@ -279,6 +437,13 @@ MPESA_CALLBACK_URL=https://your-domain.com/api/mpesa/callback
 MPESA_INITIATOR_NAME=testapi  # For B2C refunds
 MPESA_SECURITY_CREDENTIAL=your_security_credential  # For B2C refunds
 
+# PayPal Configuration
+PAYPAL_ENVIRONMENT=sandbox  # or production
+PAYPAL_CLIENT_ID=your_client_id
+PAYPAL_CLIENT_SECRET=your_client_secret
+PAYPAL_RETURN_URL=https://your-domain.com/payment/success
+PAYPAL_CANCEL_URL=https://your-domain.com/payment/cancel
+
 # Server Configuration
 PORT=5005
 NODE_ENV=production
@@ -351,6 +516,42 @@ npm install
 - Ensure this URL is publicly accessible and registered in Daraja portal
 - M-Pesa will send callbacks for payment status updates
 
+### 5. Configure PayPal
+
+1. **Create PayPal Developer Account**
+   - Go to [PayPal Developer Portal](https://developer.paypal.com)
+   - Create an account and log in
+   - Navigate to Apps & Credentials
+
+2. **Create App**
+   - Create a new app for your business
+   - Get your Client ID and Secret from the app details
+
+3. **Set Environment**
+   ```bash
+   # For testing
+   PAYPAL_ENVIRONMENT=sandbox
+   PAYPAL_CLIENT_ID=<sandbox_client_id>
+   PAYPAL_CLIENT_SECRET=<sandbox_client_secret>
+   
+   # For production
+   PAYPAL_ENVIRONMENT=production
+   PAYPAL_CLIENT_ID=<live_client_id>
+   PAYPAL_CLIENT_SECRET=<live_client_secret>
+   ```
+
+4. **Configure Return URLs**
+   ```bash
+   PAYPAL_RETURN_URL=https://your-domain.com/payment/success
+   PAYPAL_CANCEL_URL=https://your-domain.com/payment/cancel
+   ```
+
+5. **Sandbox Testing**
+   - Use PayPal sandbox accounts for testing
+   - Create test buyer and seller accounts in sandbox
+   - Test transactions with sandbox credentials
+
+### 6. Start Service
 
 **Development:**
 ```bash
