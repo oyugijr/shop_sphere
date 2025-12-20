@@ -8,6 +8,7 @@ services:
     depends_on:
       - user-service
       - product-service
+      - payment-service
     networks:
       - shopsphere-network
 
@@ -63,6 +64,23 @@ services:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    networks:
+      - shopsphere-network
+    restart: unless-stopped
+
+  payment-service:
+    build: ./payment-service
+    container_name: shopsphere-payment-service
+    ports:
+      - "5005:5005"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/shopSphere}
+      - JWT_SECRET=${JWT_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - NODE_ENV=${NODE_ENV:-development}
     networks:
       - shopsphere-network
     restart: unless-stopped

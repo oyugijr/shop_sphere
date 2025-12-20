@@ -26,8 +26,9 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 - **RESTful APIs**: Clean and well-documented API endpoints
 - **JWT Authentication**: Secure user authentication and authorization
 - **Role-Based Access Control**: Admin and user roles with appropriate permissions
+- **Payment Processing**: Complete Stripe integration for secure payments
 - **Health Checks**: Monitor service availability and health
-- **Rate Limiting**: Protection against API abuse
+- **Rate Limiting**: Protection against API abuse at multiple levels
 - **Docker Support**: Easy deployment with Docker Compose
 - **MongoDB Database**: Flexible NoSQL database for all services
 - **Notification System**: Email notifications with queue-based processing
@@ -41,6 +42,7 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 | **Product Service** | 5002 | Product catalog and inventory management |
 | **Order Service** | 5003 | Order creation, tracking, and management |
 | **Notification Service** | 5004 | Email and push notifications with queue-based processing |
+| **Payment Service** | 5005 | Payment processing with Stripe integration |
 | **MongoDB** | 27017 | Database for all services |
 | **Redis** | 6379 | Message queue and caching for notification service |
 | **MongoDB Express** | 8081 | Web-based MongoDB admin interface |
@@ -48,9 +50,11 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 ## 🏗️ Architecture
 
 ```sh
-Client → API Gateway → [User/Product/Order Services] → MongoDB
+Client → API Gateway → [User/Product/Order/Payment Services] → MongoDB
                     ↓
               Notification Service → Redis Queue → Email/SMS/WhatsApp
+                    ↓
+              Payment Service → Stripe API
 ```
 
 For detailed architecture information, see [Architecture Documentation](./docs/ARCHITECTURE.md).
@@ -220,9 +224,17 @@ curl -X POST http://localhost:3000/api/orders \
   -d '{"items":[{"productId":"PRODUCT_ID","quantity":1,"price":999.99}]}'
 ```
 
+### Create Payment Intent
+
+```bash
+curl -X POST http://localhost:5005/api/payments/intent \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"orderId":"ORDER_ID","amount":99999,"currency":"usd"}'
+```
+
 ## 🔮 Future Enhancements
 
-- [ ] Payment service integration (Stripe/PayPal)
 - [ ] Advanced search with Elasticsearch
 - [ ] Product reviews and ratings
 - [ ] Shopping cart service

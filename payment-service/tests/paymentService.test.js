@@ -1,42 +1,36 @@
-// Payment Service Tests - for a module that should be created
-// This test suite defines the expected behavior of the payment service
-// NOTE: These tests will skip if the module doesn't exist yet
+// Payment Service Tests
+const paymentService = require('../src/services/paymentService');
+const paymentRepository = require('../src/repositories/paymentRepository');
+const stripe = require('stripe');
 
-let paymentService, paymentRepository, stripe;
+jest.mock('../src/repositories/paymentRepository');
+jest.mock('../src/config/stripe', () => ({
+  paymentIntents: {
+    create: jest.fn(),
+    retrieve: jest.fn(),
+    confirm: jest.fn(),
+    cancel: jest.fn(),
+  },
+  refunds: {
+    create: jest.fn(),
+  },
+  webhooks: {
+    constructEvent: jest.fn(),
+  },
+}));
 
-try {
-  paymentService = require('../../src/services/paymentService');
-  paymentRepository = require('../../src/repositories/paymentRepository');
-  stripe = require('stripe');
-  jest.mock('../../src/repositories/paymentRepository');
-  jest.mock('stripe');
-} catch (error) {
-  // Module doesn't exist yet - tests will be skipped
-}
+const mockStripe = require('../src/config/stripe');
 
-const describeIfExists = paymentService ? describe : describe.skip;
-
-describeIfExists('Payment Service (Future Module)', () => {
-  let mockStripe;
+describe('Payment Service', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockStripe = {
-      paymentIntents: {
-        create: jest.fn(),
-        retrieve: jest.fn(),
-        confirm: jest.fn()
-      },
-      charges: {
-        retrieve: jest.fn()
-      }
-    };
-    stripe.mockReturnValue(mockStripe);
   });
 
   describe('createPaymentIntent', () => {
     it('should create a payment intent', async () => {
       const orderId = '507f1f77bcf86cd799439011';
+      const userId = '607f1f77bcf86cd799439012';
       const amount = 9999; // $99.99 in cents
       const currency = 'usd';
 
@@ -53,6 +47,7 @@ describeIfExists('Payment Service (Future Module)', () => {
       const mockPayment = {
         _id: 'payment1',
         orderId,
+        userId,
         stripePaymentIntentId: 'pi_123456',
         amount: 99.99,
         currency,
@@ -61,19 +56,22 @@ describeIfExists('Payment Service (Future Module)', () => {
 
       paymentRepository.create.mockResolvedValue(mockPayment);
 
-      const result = await paymentService.createPaymentIntent(orderId, amount, currency);
+      const result = await paymentService.createPaymentIntent(orderId, amount, currency, userId);
 
       expect(mockStripe.paymentIntents.create).toHaveBeenCalledWith({
         amount,
         currency,
-        metadata: { orderId }
+        metadata: { orderId, userId },
+        automatic_payment_methods: { enabled: true }
       });
       expect(paymentRepository.create).toHaveBeenCalledWith({
         orderId,
+        userId,
         stripePaymentIntentId: 'pi_123456',
         amount: 99.99,
         currency,
-        status: 'pending'
+        status: 'pending',
+        metadata: {}
       });
       expect(result.client_secret).toBe('pi_123456_secret');
     });
@@ -82,7 +80,7 @@ describeIfExists('Payment Service (Future Module)', () => {
       mockStripe.paymentIntents.create.mockRejectedValue(new Error('Stripe API error'));
 
       await expect(
-        paymentService.createPaymentIntent('orderId', 1000, 'usd')
+        paymentService.createPaymentIntent('orderId', 1000, 'usd', 'userId')
       ).rejects.toThrow('Stripe API error');
     });
   });
@@ -120,7 +118,7 @@ describeIfExists('Payment Service (Future Module)', () => {
 
       const mockIntent = {
         id: paymentIntentId,
-        status: 'payment_failed'
+        status: 'requires_payment_method'
       };
 
       mockStripe.paymentIntents.confirm.mockResolvedValue(mockIntent);
@@ -182,6 +180,8 @@ describeIfExists('Payment Service (Future Module)', () => {
         latest_charge: 'ch_123456'
       });
 
+      mockStripe.refunds.create.mockResolvedValue(mockRefund);
+
       const mockPayment = {
         _id: 'payment1',
         stripePaymentIntentId: paymentIntentId,
@@ -189,12 +189,16 @@ describeIfExists('Payment Service (Future Module)', () => {
         refundId: 're_123456'
       };
 
-      paymentRepository.updateStatus.mockResolvedValue(mockPayment);
+      paymentRepository.addRefund.mockResolvedValue(mockPayment);
 
       const result = await paymentService.refundPayment(paymentIntentId, amount);
 
       expect(mockStripe.paymentIntents.retrieve).toHaveBeenCalledWith(paymentIntentId);
-      expect(paymentRepository.updateStatus).toHaveBeenCalledWith(paymentIntentId, 'refunded');
+      expect(mockStripe.refunds.create).toHaveBeenCalledWith({
+        charge: 'ch_123456',
+        amount
+      });
+      expect(paymentRepository.addRefund).toHaveBeenCalledWith(paymentIntentId, 're_123456', 99.99);
       expect(result.status).toBe('refunded');
     });
 
@@ -214,7 +218,8 @@ describeIfExists('Payment Service (Future Module)', () => {
         data: {
           object: {
             id: 'pi_123456',
-            status: 'succeeded'
+            status: 'succeeded',
+            payment_method: 'pm_123456'
           }
         }
       };
@@ -229,7 +234,9 @@ describeIfExists('Payment Service (Future Module)', () => {
 
       const result = await paymentService.handleWebhook(event);
 
-      expect(paymentRepository.updateStatus).toHaveBeenCalledWith('pi_123456', 'succeeded');
+      expect(paymentRepository.updateStatus).toHaveBeenCalledWith('pi_123456', 'succeeded', {
+        paymentMethod: 'pm_123456'
+      });
       expect(result.status).toBe('succeeded');
     });
 
