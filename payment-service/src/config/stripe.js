@@ -1,7 +1,7 @@
 const Stripe = require('stripe');
 
-// For testing, allow mock or use a default test key
-if (process.env.NODE_ENV === 'test') {
+// For testing, allow mock
+if (process.env.NODE_ENV === 'test' && typeof jest !== 'undefined') {
   module.exports = {
     paymentIntents: {
       create: jest.fn(),
