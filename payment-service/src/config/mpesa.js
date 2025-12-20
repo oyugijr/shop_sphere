@@ -190,7 +190,6 @@ class MpesaClient {
   async b2cPayment(phoneNumber, amount, remarks = 'Refund') {
     try {
       const accessToken = await this.getAccessToken();
-      const initiatorPassword = process.env.MPESA_INITIATOR_PASSWORD;
       const securityCredential = process.env.MPESA_SECURITY_CREDENTIAL;
 
       if (!securityCredential) {

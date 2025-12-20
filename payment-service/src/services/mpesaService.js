@@ -17,7 +17,7 @@ const validatePhoneNumber = (phoneNumber) => {
     return '254' + cleaned;
   }
   
-  throw new Error('Invalid phone number format. Use 254XXXXXXXXX or 0XXXXXXXXX');
+  throw new Error('Invalid phone number format. Use 254XXXXXXXXX, 0XXXXXXXXX, or XXXXXXXXX');
 };
 
 /**
