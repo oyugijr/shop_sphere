@@ -9,6 +9,7 @@
 ## Purpose
 
 This document provides a **thorough per-microservice review** of the ShopSphere e-commerce platform, focusing on:
+
 - What has been implemented in each service
 - What should be improved in each service  
 - What should be implemented in each service
@@ -45,7 +46,8 @@ This document provides a **thorough per-microservice review** of the ShopSphere 
 **Implemented:** ✅ HTTP proxy routing ✅ Rate limiting ✅ Security headers ✅ CORS ✅ Error handling ✅ Request logging ✅ Health check
 
 **Architecture:**
-```
+
+```sh
 api-gateway/
 ├── app.js
 ├── src/middlewares/
@@ -57,6 +59,7 @@ api-gateway/
 ```
 
 **Security Headers Implemented:**
+
 - X-Frame-Options: DENY
 - X-Content-Type-Options: nosniff
 - X-XSS-Protection: 0 (deprecated header, removed/disabled)
@@ -165,7 +168,8 @@ api-gateway/
 ✅ Registration ✅ Login (JWT) ✅ Password hashing (bcrypt) ✅ Role-based access (user/admin) ✅ Auth middleware ✅ Profile management ✅ **Best test coverage (~60%)**
 
 **Architecture:**
-```
+
+```sh
 user-service/
 ├── controllers/ (authController, userController)
 ├── services/ (authService, userService)
@@ -176,6 +180,7 @@ user-service/
 ```
 
 **User Model:**
+
 ```javascript
 {
   name: String,
@@ -301,7 +306,8 @@ user-service/
 ✅ CRUD operations ✅ Product model (name, price, stock, category, image URL) ✅ Repository pattern ✅ Service layer ✅ Test coverage (~55%)
 
 **Architecture:**
-```
+
+```sh
 product-service/
 ├── controllers/ (product.controller)
 ├── services/ (productService)
@@ -311,6 +317,7 @@ product-service/
 ```
 
 **Product Model:**
+
 ```javascript
 {
   name: String,
@@ -356,7 +363,8 @@ product-service/
 ### ✚ What Should Be Implemented
 
 1. **Pagination with Filtering**
-   ```
+
+   ```sh
    GET /api/products?page=1&limit=20&category=electronics&minPrice=100&maxPrice=500&sort=-price
    ```
 
@@ -386,6 +394,7 @@ product-service/
    - Prevent buying draft/archived products
 
 7. **Database Indexes**
+
    ```javascript
    category: 1  // For filtering
    name: "text", description: "text"  // For search
@@ -456,7 +465,8 @@ product-service/
 ✅ Create order ✅ Get order by ID ✅ Get user orders ✅ Update order status (admin) ✅ Auth middleware ✅ Role-based access
 
 **Architecture:**
-```
+
+```sh
 order-service/
 ├── controllers/ (orderController)
 ├── services/ (orderService)
@@ -467,6 +477,7 @@ order-service/
 ```
 
 **Order Model:**
+
 ```javascript
 {
   user: ObjectId (ref User),
@@ -486,6 +497,7 @@ order-service/
    - Current: Accepts `totalPrice` from client
    - **SEVERE SECURITY VULNERABILITY:** Clients can set arbitrary prices
    - Solution: Calculate price server-side from products
+
    ```javascript
    // DON'T trust client
    // const { totalPrice } = req.body; ❌
@@ -497,6 +509,7 @@ order-service/
      totalPrice += product.price * item.quantity;
    }
    ```
+
    - Priority: P0 - **MUST FIX IMMEDIATELY**
 
 2. **CRITICAL: No Stock Validation** ❌
@@ -509,6 +522,7 @@ order-service/
    - Current: Order creation not atomic
    - Problem: Race conditions, stock inconsistencies
    - Solution: Use MongoDB transactions
+
    ```javascript
    const session = await mongoose.startSession();
    session.startTransaction();
@@ -519,6 +533,7 @@ order-service/
      await session.abortTransaction();
    }
    ```
+
    - Priority: P0
 
 4. **No Stock Reduction**
@@ -554,6 +569,7 @@ order-service/
 
 5. **Product Price Snapshot**
    - Store product details in order
+
    ```javascript
    products: [{
      productId: ObjectId,
@@ -575,6 +591,7 @@ order-service/
    - Notify user
 
 8. **Shipping & Billing Address**
+
    ```javascript
    shippingAddress: {
      street, city, state, zip, country
@@ -590,6 +607,7 @@ order-service/
 10. **Order History Tracking**
     - Track status changes
     - Store who changed status and when
+
     ```javascript
     history: [{
       status: String,
@@ -599,7 +617,8 @@ order-service/
     ```
 
 11. **Pagination & Filtering**
-    ```
+
+    ```sh
     GET /api/orders?status=pending&page=1&limit=20
     ```
 
@@ -676,7 +695,8 @@ This service has a SEVERE SECURITY VULNERABILITY (client-controlled pricing) tha
 ✅ Queue-based processing (Redis + Bull) ✅ Email via Brevo ✅ SMS via Brevo ✅ WhatsApp via Brevo ✅ Worker pattern ✅ Retry mechanism ✅ Notification tracking
 
 **Architecture:**
-```
+
+```sh
 notification-service/
 ├── config/ (queue, redis, brevo)
 ├── controllers/ (notificationController)
@@ -688,6 +708,7 @@ notification-service/
 ```
 
 **Notification Model:**
+
 ```javascript
 {
   userId: ObjectId,
@@ -709,6 +730,7 @@ notification-service/
 2. **Template Variables/Personalization**
    - Current: Cannot personalize notifications
    - Solution: Add template variable support
+
    ```javascript
    {
      template: 'order-confirmation',
@@ -719,6 +741,7 @@ notification-service/
      }
    }
    ```
+
    - Priority: P0
 
 3. **User Notification Preferences**
@@ -751,7 +774,8 @@ notification-service/
    - Email verification
 
 2. **Template System** (P0)
-   ```
+
+   ```sh
    templates/
    ├── email/
    │   ├── order-confirmation.html
@@ -764,6 +788,7 @@ notification-service/
    ```
 
 3. **Notification Preferences Model** (P1)
+
    ```javascript
    {
      userId: ObjectId,
@@ -858,6 +883,7 @@ N/A - Service not implemented
 **Cart service is ESSENTIAL for e-commerce. Current status blocks the entire checkout flow.**
 
 1. **Cart Model** (P0)
+
    ```javascript
    {
      userId: ObjectId,  // null for guest carts
@@ -954,6 +980,7 @@ N/A - Service not implemented
 **Payment service is ESSENTIAL for e-commerce. Current status prevents any real transactions.**
 
 1. **Payment Model** (P0)
+
    ```javascript
    {
      orderId: ObjectId,
@@ -1007,6 +1034,7 @@ N/A - Service not implemented
    - User service: Auth
 
 7. **Payment Flow** (P0)
+
    ```
    Client → Create Order → Create Payment Intent → Client Confirms → Webhook Updates Order
    ```
@@ -1106,6 +1134,7 @@ N/A - Service not implemented
 ### Timeline to Production
 
 **Minimum Viable Product (MVP):**
+
 - Fix order service pricing: 2-3 days
 - Implement cart service: 7-10 days
 - Implement payment service: 10-14 days
@@ -1114,6 +1143,7 @@ N/A - Service not implemented
 - **Total: ~6-8 weeks (30-40 working days)**
 
 **Production-Ready (with monitoring, CI/CD, full testing):**
+
 - MVP tasks: 6-8 weeks
 - Monitoring & logging setup: 1 week
 - CI/CD pipeline: 1 week
@@ -1126,6 +1156,7 @@ N/A - Service not implemented
 **DO NOT DEPLOY IN CURRENT STATE**
 
 The platform needs:
+
 1. Immediate fix for order service security issue
 2. Implementation of cart and payment services
 3. Stock validation and transactions
