@@ -217,10 +217,8 @@ const handleWebhook = async (event) => {
 
       case 'charge.refunded':
         const charge = event.data.object;
-        // Find payment by charge ID
-        const payments = await paymentRepository.findByUserId(charge.metadata?.userId);
-        const payment = payments.find(p => p.stripePaymentIntentId === charge.payment_intent);
-        if (payment) {
+        // The charge has a payment_intent field we can use to find the payment
+        if (charge.payment_intent) {
           return await paymentRepository.addRefund(
             charge.payment_intent,
             charge.refunds.data[0]?.id,

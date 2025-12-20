@@ -1,6 +1,11 @@
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// For tests, allow a test secret
+if (!JWT_SECRET && process.env.NODE_ENV !== 'test') {
+  throw new Error('JWT_SECRET is required in environment variables');
+}
 
 const authMiddleware = (req, res, next) => {
   const token = req.header("Authorization");
@@ -12,7 +17,7 @@ const authMiddleware = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token.replace("Bearer ", ""), JWT_SECRET);
+    const decoded = jwt.verify(token.replace("Bearer ", ""), JWT_SECRET || 'test-secret');
     req.user = decoded;
     next();
   } catch (error) {
