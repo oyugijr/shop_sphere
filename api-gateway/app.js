@@ -46,12 +46,14 @@ const services = {
     user: "http://user-service:5001",
     product: "http://product-service:5002",
     order: "http://order-service:5003",
+    cart: "http://cart-service:5006",
   };
   
   // Middleware to forward requests
   app.use("/api/users", createProxyMiddleware({ target: services.user, changeOrigin: true }));
   app.use("/api/products", createProxyMiddleware({ target: services.product, changeOrigin: true }));
   app.use("/api/orders", createProxyMiddleware({ target: services.order, changeOrigin: true }));
+  app.use("/api/cart", createProxyMiddleware({ target: services.cart, changeOrigin: true }));
   
   // Error handling middleware (should be last)
   app.use(errorHandler);

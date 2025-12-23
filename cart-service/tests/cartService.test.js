@@ -1,158 +1,180 @@
-// Cart Service Tests - for a module that should be created
-// This test suite defines the expected behavior of the cart service
-// NOTE: These tests will skip if the module doesn't exist yet
+const cartService = require("../src/services/cartService");
+const cartRepository = require("../src/repositories/cartRepository");
+const { validateProduct } = require("../src/utils/productValidator");
 
-let cartService, cartRepository;
+// Mock dependencies
+jest.mock("../src/repositories/cartRepository");
+jest.mock("../src/utils/productValidator");
 
-try {
-  cartService = require('../../src/services/cartService');
-  cartRepository = require('../../src/repositories/cartRepository');
-  jest.mock('../../src/repositories/cartRepository');
-} catch (error) {
-  // Module doesn't exist yet - tests will be skipped
-}
-
-const describeIfExists = cartService ? describe : describe.skip;
-
-describeIfExists('Cart Service (Future Module)', () => {
+describe("Cart Service Unit Tests", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('getCart', () => {
-    it('should return user cart', async () => {
+  describe("getCart", () => {
+    it("should return user cart if exists", async () => {
+      const userId = "507f1f77bcf86cd799439011";
       const mockCart = {
-        _id: '1',
-        userId: '507f1f77bcf86cd799439011',
+        userId,
         items: [
-          { productId: 'prod1', quantity: 2, price: 99.99 }
+          {
+            productId: "prod1",
+            name: "Laptop",
+            price: 999.99,
+            quantity: 2,
+            subtotal: 1999.98,
+          },
         ],
-        totalPrice: 199.98
+        totalPrice: 1999.98,
+        totalItems: 2,
       };
+
       cartRepository.findByUserId.mockResolvedValue(mockCart);
 
-      const result = await cartService.getCart('507f1f77bcf86cd799439011');
+      const result = await cartService.getCart(userId);
 
-      expect(cartRepository.findByUserId).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(cartRepository.findByUserId).toHaveBeenCalledWith(userId);
       expect(result).toEqual(mockCart);
     });
 
-    it('should create empty cart if none exists', async () => {
+    it("should create empty cart if none exists", async () => {
+      const userId = "507f1f77bcf86cd799439012";
       const emptyCart = {
-        _id: '2',
-        userId: '507f1f77bcf86cd799439012',
+        userId,
         items: [],
-        totalPrice: 0
+        totalPrice: 0,
+        totalItems: 0,
       };
+
       cartRepository.findByUserId.mockResolvedValue(null);
       cartRepository.create.mockResolvedValue(emptyCart);
 
-      const result = await cartService.getCart('507f1f77bcf86cd799439012');
+      const result = await cartService.getCart(userId);
 
       expect(cartRepository.create).toHaveBeenCalledWith({
-        userId: '507f1f77bcf86cd799439012',
+        userId,
         items: [],
-        totalPrice: 0
+        totalPrice: 0,
+        totalItems: 0,
       });
       expect(result).toEqual(emptyCart);
     });
+
+    it("should throw error if userId is missing", async () => {
+      await expect(cartService.getCart(null)).rejects.toThrow("User ID is required");
+    });
   });
 
-  describe('addToCart', () => {
-    it('should add item to cart', async () => {
-      const userId = '507f1f77bcf86cd799439011';
-      const productId = 'prod1';
+  describe("addToCart", () => {
+    it("should add item to cart successfully", async () => {
+      const userId = "507f1f77bcf86cd799439011";
+      const productId = "prod1";
       const quantity = 2;
-      const price = 99.99;
+      const price = 999.99;
+      const name = "Laptop";
 
       const mockCart = {
-        _id: '1',
         userId,
-        items: [{ productId, quantity, price }],
-        totalPrice: 199.98
+        items: [{ productId, name, price, quantity, subtotal: 1999.98 }],
+        totalPrice: 1999.98,
+        totalItems: 2,
       };
 
-      cartRepository.addItem.mockResolvedValue(mockCart);
+      validateProduct.mockResolvedValue({ _id: productId, name, price, stock: 10 });
+      cartRepository.addOrUpdateItem.mockResolvedValue(mockCart);
 
-      const result = await cartService.addToCart(userId, productId, quantity, price);
+      const result = await cartService.addToCart(userId, productId, quantity, price, name);
 
-      expect(cartRepository.addItem).toHaveBeenCalledWith(userId, productId, quantity, price);
-      expect(result.items).toHaveLength(1);
-      expect(result.totalPrice).toBe(199.98);
+      expect(validateProduct).toHaveBeenCalledWith(productId, quantity);
+      expect(cartRepository.addOrUpdateItem).toHaveBeenCalledWith(userId, {
+        productId,
+        name,
+        price,
+        quantity,
+        subtotal: 1999.98,
+      });
+      expect(result).toEqual(mockCart);
     });
 
-    it('should update quantity if item already in cart', async () => {
-      const userId = '507f1f77bcf86cd799439011';
-      const productId = 'prod1';
+    it("should throw error if userId is missing", async () => {
+      await expect(
+        cartService.addToCart(null, "prod1", 1, 999.99, "Laptop")
+      ).rejects.toThrow("User ID is required");
+    });
 
-      const mockCart = {
-        _id: '1',
-        userId,
-        items: [{ productId, quantity: 3, price: 99.99 }],
-        totalPrice: 299.97
-      };
+    it("should throw error if productId is missing", async () => {
+      await expect(
+        cartService.addToCart("user1", null, 1, 999.99, "Laptop")
+      ).rejects.toThrow("Product ID is required");
+    });
 
-      cartRepository.updateItemQuantity.mockResolvedValue(mockCart);
+    it("should throw error if name is missing", async () => {
+      await expect(
+        cartService.addToCart("user1", "prod1", 1, 999.99, null)
+      ).rejects.toThrow("Product name is required");
+    });
 
-      const result = await cartService.addToCart(userId, productId, 1, 99.99);
+    it("should throw error if quantity is invalid", async () => {
+      await expect(
+        cartService.addToCart("user1", "prod1", 0, 999.99, "Laptop")
+      ).rejects.toThrow("Quantity must be at least 1");
 
-      expect(result.items[0].quantity).toBe(3);
+      await expect(
+        cartService.addToCart("user1", "prod1", 1.5, 999.99, "Laptop")
+      ).rejects.toThrow("Quantity must be an integer");
+    });
+
+    it("should throw error if price is invalid", async () => {
+      await expect(
+        cartService.addToCart("user1", "prod1", 1, -10, "Laptop")
+      ).rejects.toThrow("Price must be a positive number");
+
+      await expect(
+        cartService.addToCart("user1", "prod1", 1, null, "Laptop")
+      ).rejects.toThrow("Price must be a positive number");
+    });
+
+    it("should propagate product validation errors", async () => {
+      validateProduct.mockRejectedValue(new Error("Product not found"));
+
+      await expect(
+        cartService.addToCart("user1", "prod1", 1, 999.99, "Laptop")
+      ).rejects.toThrow("Product not found");
     });
   });
 
-  describe('removeFromCart', () => {
-    it('should remove item from cart', async () => {
-      const userId = '507f1f77bcf86cd799439011';
-      const productId = 'prod1';
-
-      const mockCart = {
-        _id: '1',
-        userId,
-        items: [],
-        totalPrice: 0
-      };
-
-      cartRepository.removeItem.mockResolvedValue(mockCart);
-
-      const result = await cartService.removeFromCart(userId, productId);
-
-      expect(cartRepository.removeItem).toHaveBeenCalledWith(userId, productId);
-      expect(result.items).toHaveLength(0);
-      expect(result.totalPrice).toBe(0);
-    });
-  });
-
-  describe('updateQuantity', () => {
-    it('should update item quantity', async () => {
-      const userId = '507f1f77bcf86cd799439011';
-      const productId = 'prod1';
+  describe("updateQuantity", () => {
+    it("should update item quantity successfully", async () => {
+      const userId = "507f1f77bcf86cd799439011";
+      const productId = "prod1";
       const quantity = 5;
 
       const mockCart = {
-        _id: '1',
         userId,
-        items: [{ productId, quantity: 5, price: 99.99 }],
-        totalPrice: 499.95
+        items: [{ productId, name: "Laptop", price: 999.99, quantity: 5, subtotal: 4999.95 }],
+        totalPrice: 4999.95,
+        totalItems: 5,
       };
 
+      validateProduct.mockResolvedValue({ _id: productId, stock: 10 });
       cartRepository.updateItemQuantity.mockResolvedValue(mockCart);
 
       const result = await cartService.updateQuantity(userId, productId, quantity);
 
+      expect(validateProduct).toHaveBeenCalledWith(productId, quantity);
       expect(cartRepository.updateItemQuantity).toHaveBeenCalledWith(userId, productId, quantity);
-      expect(result.items[0].quantity).toBe(5);
-      expect(result.totalPrice).toBe(499.95);
+      expect(result).toEqual(mockCart);
     });
 
-    it('should remove item if quantity is 0', async () => {
-      const userId = '507f1f77bcf86cd799439011';
-      const productId = 'prod1';
+    it("should remove item if quantity is 0", async () => {
+      const userId = "507f1f77bcf86cd799439011";
+      const productId = "prod1";
 
       const mockCart = {
-        _id: '1',
         userId,
         items: [],
-        totalPrice: 0
+        totalPrice: 0,
+        totalItems: 0,
       };
 
       cartRepository.removeItem.mockResolvedValue(mockCart);
@@ -160,19 +182,81 @@ describeIfExists('Cart Service (Future Module)', () => {
       const result = await cartService.updateQuantity(userId, productId, 0);
 
       expect(cartRepository.removeItem).toHaveBeenCalledWith(userId, productId);
-      expect(result.items).toHaveLength(0);
+      expect(result).toEqual(mockCart);
+    });
+
+    it("should throw error if quantity is negative", async () => {
+      await expect(
+        cartService.updateQuantity("user1", "prod1", -1)
+      ).rejects.toThrow("Quantity cannot be negative");
+    });
+
+    it("should throw error if quantity is not an integer", async () => {
+      await expect(
+        cartService.updateQuantity("user1", "prod1", 1.5)
+      ).rejects.toThrow("Quantity must be an integer");
+    });
+
+    it("should throw error if cart or item not found", async () => {
+      validateProduct.mockResolvedValue({ _id: "prod1", stock: 10 });
+      cartRepository.updateItemQuantity.mockResolvedValue(null);
+
+      await expect(
+        cartService.updateQuantity("user1", "prod1", 5)
+      ).rejects.toThrow("Cart or item not found");
     });
   });
 
-  describe('clearCart', () => {
-    it('should clear all items from cart', async () => {
-      const userId = '507f1f77bcf86cd799439011';
+  describe("removeFromCart", () => {
+    it("should remove item from cart successfully", async () => {
+      const userId = "507f1f77bcf86cd799439011";
+      const productId = "prod1";
 
       const mockCart = {
-        _id: '1',
         userId,
         items: [],
-        totalPrice: 0
+        totalPrice: 0,
+        totalItems: 0,
+      };
+
+      cartRepository.removeItem.mockResolvedValue(mockCart);
+
+      const result = await cartService.removeFromCart(userId, productId);
+
+      expect(cartRepository.removeItem).toHaveBeenCalledWith(userId, productId);
+      expect(result).toEqual(mockCart);
+    });
+
+    it("should throw error if userId is missing", async () => {
+      await expect(cartService.removeFromCart(null, "prod1")).rejects.toThrow(
+        "User ID is required"
+      );
+    });
+
+    it("should throw error if productId is missing", async () => {
+      await expect(cartService.removeFromCart("user1", null)).rejects.toThrow(
+        "Product ID is required"
+      );
+    });
+
+    it("should throw error if cart not found", async () => {
+      cartRepository.removeItem.mockResolvedValue(null);
+
+      await expect(cartService.removeFromCart("user1", "prod1")).rejects.toThrow(
+        "Cart not found"
+      );
+    });
+  });
+
+  describe("clearCart", () => {
+    it("should clear all items from cart successfully", async () => {
+      const userId = "507f1f77bcf86cd799439011";
+
+      const mockCart = {
+        userId,
+        items: [],
+        totalPrice: 0,
+        totalItems: 0,
       };
 
       cartRepository.clearCart.mockResolvedValue(mockCart);
@@ -180,8 +264,17 @@ describeIfExists('Cart Service (Future Module)', () => {
       const result = await cartService.clearCart(userId);
 
       expect(cartRepository.clearCart).toHaveBeenCalledWith(userId);
-      expect(result.items).toHaveLength(0);
-      expect(result.totalPrice).toBe(0);
+      expect(result).toEqual(mockCart);
+    });
+
+    it("should throw error if userId is missing", async () => {
+      await expect(cartService.clearCart(null)).rejects.toThrow("User ID is required");
+    });
+
+    it("should throw error if cart not found", async () => {
+      cartRepository.clearCart.mockResolvedValue(null);
+
+      await expect(cartService.clearCart("user1")).rejects.toThrow("Cart not found");
     });
   });
 });

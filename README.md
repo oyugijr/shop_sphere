@@ -43,6 +43,7 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 | **Order Service** | 5003 | Order creation, tracking, and management |
 | **Notification Service** | 5004 | Email and push notifications with queue-based processing |
 | **Payment Service** | 5005 | Payment processing with Stripe integration |
+| **Cart Service** | 5006 | Shopping cart management with real-time stock validation |
 | **MongoDB** | 27017 | Database for all services |
 | **Redis** | 6379 | Message queue and caching for notification service |
 | **MongoDB Express** | 8081 | Web-based MongoDB admin interface |
@@ -50,11 +51,13 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 ## 🏗️ Architecture
 
 ```sh
-Client → API Gateway → [User/Product/Order/Payment Services] → MongoDB
+Client → API Gateway → [User/Product/Order/Cart/Payment Services] → MongoDB
                     ↓
               Notification Service → Redis Queue → Email/SMS/WhatsApp
                     ↓
               Payment Service → Stripe API
+                    ↓
+              Cart Service ↔ Product Service (stock validation)
 ```
 
 For detailed architecture information, see [Architecture Documentation](./docs/ARCHITECTURE.md).
@@ -237,7 +240,7 @@ curl -X POST http://localhost:5005/api/payments/intent \
 
 - [ ] Advanced search with Elasticsearch
 - [ ] Product reviews and ratings
-- [ ] Shopping cart service
+- [x] Shopping cart service (IMPLEMENTED)
 - [ ] Real-time inventory updates
 - [ ] Kubernetes deployment manifests
 - [ ] CI/CD pipeline

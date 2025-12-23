@@ -9,6 +9,7 @@ services:
       - user-service
       - product-service
       - payment-service
+      - cart-service
     networks:
       - shopsphere-network
 
@@ -47,6 +48,23 @@ services:
       - mongodb
     environment:
       - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/shopSphere}
+    networks:
+      - shopsphere-network
+    restart: unless-stopped
+
+  cart-service:
+    build: ./cart-service
+    container_name: shopsphere-cart-service
+    ports:
+      - "5006:5006"
+    depends_on:
+      - mongodb
+      - product-service
+    environment:
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/shopSphere}
+      - JWT_SECRET=${JWT_SECRET}
+      - PRODUCT_SERVICE_URL=http://product-service:5002
+      - NODE_ENV=${NODE_ENV:-development}
     networks:
       - shopsphere-network
     restart: unless-stopped
