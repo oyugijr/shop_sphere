@@ -7,6 +7,8 @@
 - **Product Service**: `http://localhost:5002`
 - **Order Service**: `http://localhost:5003`
 - **Notification Service**: `http://localhost:5004`
+- **Payment Service**: `http://localhost:5005`
+- **Cart Service**: `http://localhost:5006`
 
 ## Authentication
 
@@ -246,3 +248,97 @@ The API Gateway implements rate limiting:
 ## CORS
 
 CORS is enabled for all origins by default. In production, configure the `ALLOWED_ORIGINS` environment variable.
+
+### Cart Service
+
+#### Get User's Cart
+
+- **GET** `/api/cart`
+- **Auth**: Required (JWT token)
+- **Description**: Retrieves the current user's shopping cart. Creates an empty cart if none exists.
+- **Response**:
+
+  ```json
+  {
+    "userId": "507f1f77bcf86cd799439011",
+    "items": [
+      {
+        "productId": "507f1f77bcf86cd799439012",
+        "name": "Laptop",
+        "price": 999.99,
+        "quantity": 2,
+        "subtotal": 1999.98
+      }
+    ],
+    "totalPrice": 1999.98,
+    "totalItems": 2,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+  ```
+
+#### Add Item to Cart
+
+- **POST** `/api/cart/items`
+- **Auth**: Required (JWT token)
+- **Description**: Adds a product to the cart or updates quantity if item already exists. Validates product availability and stock levels.
+- **Body**:
+
+  ```json
+  {
+    "productId": "507f1f77bcf86cd799439012",
+    "name": "Laptop",
+    "price": 999.99,
+    "quantity": 1
+  }
+  ```
+
+- **Response**: Updated cart object
+- **Errors**:
+  - `400`: Missing required fields, invalid quantity, or insufficient stock
+  - `503`: Product service unavailable
+
+#### Update Item Quantity
+
+- **PUT** `/api/cart/items/:productId`
+- **Auth**: Required (JWT token)
+- **Description**: Updates the quantity of an item in the cart. Setting quantity to 0 removes the item.
+- **Body**:
+
+  ```json
+  {
+    "quantity": 3
+  }
+  ```
+
+- **Response**: Updated cart object
+- **Errors**:
+  - `400`: Invalid quantity, cart/item not found, or insufficient stock
+  - `503`: Product service unavailable
+
+#### Remove Item from Cart
+
+- **DELETE** `/api/cart/items/:productId`
+- **Auth**: Required (JWT token)
+- **Description**: Removes a specific item from the cart.
+- **Response**: Updated cart object
+- **Errors**:
+  - `404`: Cart or item not found
+
+#### Clear Cart
+
+- **DELETE** `/api/cart`
+- **Auth**: Required (JWT token)
+- **Description**: Removes all items from the cart.
+- **Response**: Empty cart object
+- **Errors**:
+  - `404`: Cart not found
+
+#### Cart Service Features
+
+- **Real-time Stock Validation**: Validates product availability before adding/updating items
+- **Automatic Calculations**: Subtotals and totals calculated automatically
+- **One Cart Per User**: Each user has a unique cart
+- **No Duplicates**: Prevents duplicate products in cart (updates quantity instead)
+- **Production Ready**: No mocks, real database operations and service-to-service communication
+
