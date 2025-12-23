@@ -1,23 +1,35 @@
 {
   "name": "product-service",
   "version": "1.0.0",
-  "description": "Product catalog and inventory management service for ShopSphere",
+  "description": "Production-ready product catalog and inventory management service for ShopSphere",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
     "test": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:unit": "jest tests/validation.test.js",
+    "test:integration": "jest tests/productIntegration.test.js",
+    "test:api": "jest tests/productAPI.test.js",
+    "lint": "echo 'Linting not configured yet'",
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix"
   },
   "keywords": [
     "microservices",
     "product-catalog",
     "inventory",
-    "ecommerce"
+    "ecommerce",
+    "production-ready",
+    "rest-api"
   ],
   "author": "Oyugi Jr",
   "license": "MIT",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "dependencies": {
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
