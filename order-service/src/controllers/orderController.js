@@ -3,9 +3,6 @@ const { validateOrderStatus, validatePaymentStatus } = require("../utils/validat
 
 const createOrder = async (req, res, next) => {
   try {
-    // const { products, totalPrice } = req.body;
-    // const order = await orderService.createOrder(req.user.id, products, totalPrice);
-    // res.status(201).json(order);
     const token = req.header("Authorization");
     const order = await orderService.createOrder(req.user.id, req.body, token);
 
@@ -49,6 +46,29 @@ const getUserOrders = async (req, res, next) => {
     };
 
     const result = await orderService.getUserOrders(req.user.id, options);
+
+    res.json({
+      success: true,
+      data: result.orders,
+      pagination: result.pagination
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAllOrders = async (req, res, next) => {
+  try {
+    const options = {
+      page: parseInt(req.query.page) || 1,
+      limit: parseInt(req.query.limit) || 10,
+      status: req.query.status,
+      paymentStatus: req.query.paymentStatus,
+      sortBy: req.query.sortBy || 'createdAt',
+      sortOrder: req.query.sortOrder || 'desc'
+    };
+
+    const result = await orderService.getAllOrders(options);
 
     res.json({
       success: true,
