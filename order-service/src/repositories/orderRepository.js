@@ -5,15 +5,203 @@ const createOrder = async (orderData) => {
 };
 
 const getOrderById = async (orderId) => {
-  return await Order.findById(orderId).populate("user").populate("products.product");
+  return await Order.findById(orderId)
+    .populate("user", "name email")
+    .populate("items.product", "name price imageUrl");
 };
 
-const getUserOrders = async (userId) => {
-  return await Order.find({ user: userId }).populate("products.product");
+const getUserOrders = async (userId, options = {}) => {
+  const { 
+    page = 1, 
+    limit = 10, 
+    status, 
+    paymentStatus,
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  } = options;
+
+  const skip = (page - 1) * limit;
+  const query = { user: userId };
+
+  if (status) {
+    query.status = status;
+  }
+
+  if (paymentStatus) {
+    query.paymentStatus = paymentStatus;
+  }
+
+  const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+  const [orders, total] = await Promise.all([
+    Order.find(query)
+      .populate("items.product", "name price imageUrl")
+      .sort(sort)
+      .skip(skip)
+      .limit(limit),
+    Order.countDocuments(query)
+  ]);
+
+  return {
+    orders,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / limit)
+    }
+  };
 };
 
-const updateOrderStatus = async (orderId, status) => {
-  return await Order.findByIdAndUpdate(orderId, { status }, { new: true });
+const getAllOrders = async (options = {}) => {
+  const { 
+    page = 1, 
+    limit = 10, 
+    status, 
+    paymentStatus,
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  } = options;
+
+  const skip = (page - 1) * limit;
+  const query = {};
+
+  if (status) {
+    query.status = status;
+  }
+
+  if (paymentStatus) {
+    query.paymentStatus = paymentStatus;
+  }
+
+  const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+  const [orders, total] = await Promise.all([
+    Order.find(query)
+      .populate("user", "name email")
+      .populate("items.product", "name price imageUrl")
+      .sort(sort)
+      .skip(skip)
+      .limit(limit),
+    Order.countDocuments(query)
+  ]);
+
+  return {
+    orders,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / limit)
+    }
+  };
 };
 
-module.exports = { createOrder, getOrderById, getUserOrders, updateOrderStatus };
+const updateOrderStatus = async (orderId, status, userId, note) => {
+  const order = await Order.findById(orderId);
+  
+  if (!order) {
+    return null;
+  }
+
+  order.status = status;
+  order.addStatusHistory(status, note, userId);
+  
+  return await order.save();
+};
+
+const updateOrderPaymentStatus = async (orderId, paymentStatus, paymentId, paymentMethod) => {
+  const updateData = { paymentStatus };
+  
+  if (paymentId) {
+    updateData.paymentId = paymentId;
+  }
+  
+  if (paymentMethod) {
+    updateData.paymentMethod = paymentMethod;
+  }
+
+  return await Order.findByIdAndUpdate(
+    orderId, 
+    updateData, 
+    { new: true }
+  );
+};
+
+const cancelOrder = async (orderId, userId, reason) => {
+  const order = await Order.findById(orderId);
+  
+  if (!order) {
+    return null;
+  }
+
+  if (!order.canBeCancelled()) {
+    throw new Error('Order cannot be cancelled in current status');
+  }
+
+  order.status = 'cancelled';
+  order.cancelReason = reason;
+  order.cancelledAt = new Date();
+  order.cancelledBy = userId;
+  order.addStatusHistory('cancelled', reason, userId);
+  
+  return await order.save();
+};
+
+const getOrderByOrderNumber = async (orderNumber) => {
+  return await Order.findOne({ orderNumber })
+    .populate("user", "name email")
+    .populate("items.product", "name price imageUrl");
+};
+
+const getOrderStats = async (userId, isAdmin) => {
+  const query = isAdmin ? {} : { user: userId };
+
+  const stats = await Order.aggregate([
+    { $match: query },
+    {
+      $group: {
+        _id: null,
+        totalOrders: { $sum: 1 },
+        totalRevenue: { $sum: "$totalPrice" },
+        pendingOrders: {
+          $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] }
+        },
+        processingOrders: {
+          $sum: { $cond: [{ $eq: ["$status", "processing"] }, 1, 0] }
+        },
+        shippedOrders: {
+          $sum: { $cond: [{ $eq: ["$status", "shipped"] }, 1, 0] }
+        },
+        deliveredOrders: {
+          $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] }
+        },
+        cancelledOrders: {
+          $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] }
+        }
+      }
+    }
+  ]);
+
+  return stats[0] || {
+    totalOrders: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+    processingOrders: 0,
+    shippedOrders: 0,
+    deliveredOrders: 0,
+    cancelledOrders: 0
+  };
+};
+
+module.exports = { 
+  createOrder, 
+  getOrderById, 
+  getUserOrders, 
+  getAllOrders,
+  updateOrderStatus,
+  updateOrderPaymentStatus,
+  cancelOrder,
+  getOrderByOrderNumber,
+  getOrderStats
+};

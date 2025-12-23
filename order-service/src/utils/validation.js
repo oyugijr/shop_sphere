@@ -1,7 +1,6 @@
 const sanitizeInput = (input) => {
   if (typeof input === 'string') {
     // Remove potential XSS vectors - comprehensive sanitization
-    // Note: For production, consider using a library like 'validator' or 'dompurify'
     let sanitized = input;
     
     // Remove dangerous protocols
@@ -25,11 +24,12 @@ const sanitizeInput = (input) => {
 const validateOrder = (data) => {
   const errors = [];
 
+  // Validate items
   if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
     errors.push('Order must contain at least one item');
   } else {
     data.items.forEach((item, index) => {
-      if (!item.productId) {
+      if (!item.productId && !item.product) {
         errors.push(`Item ${index + 1}: Product ID is required`);
       }
       if (!item.quantity || item.quantity < 1) {
@@ -38,13 +38,24 @@ const validateOrder = (data) => {
       if (item.price === undefined || item.price < 0) {
         errors.push(`Item ${index + 1}: Valid price is required (must be >= 0)`);
       }
+      if (!item.name || item.name.trim().length === 0) {
+        errors.push(`Item ${index + 1}: Product name is required`);
+      }
     });
   }
 
+  // Validate shipping address
   if (!data.shippingAddress) {
     errors.push('Shipping address is required');
   } else {
-    const { street, city, state, zipCode, country } = data.shippingAddress;
+    const { fullName, phoneNumber, street, city, state, zipCode, country } = data.shippingAddress;
+    
+    if (!fullName || fullName.trim().length < 2) {
+      errors.push('Valid full name is required');
+    }
+    if (!phoneNumber || phoneNumber.trim().length < 10) {
+      errors.push('Valid phone number is required');
+    }
     if (!street || street.trim().length < 5) {
       errors.push('Valid street address is required');
     }
@@ -62,6 +73,11 @@ const validateOrder = (data) => {
     }
   }
 
+  // Validate total price
+  if (data.totalPrice === undefined || data.totalPrice <= 0) {
+    errors.push('Valid total price is required (must be > 0)');
+  }
+
   return {
     isValid: errors.length === 0,
     errors
@@ -73,8 +89,25 @@ const validateOrderStatus = (status) => {
   return validStatuses.includes(status);
 };
 
+const validatePaymentStatus = (status) => {
+  const validStatuses = ['pending', 'processing', 'completed', 'failed', 'refunded'];
+  return validStatuses.includes(status);
+};
+
+const validatePaymentMethod = (method) => {
+  const validMethods = ['stripe', 'mpesa', 'paypal', 'cash_on_delivery'];
+  return validMethods.includes(method);
+};
+
+const validateObjectId = (id) => {
+  return /^[0-9a-fA-F]{24}$/.test(id);
+};
+
 module.exports = {
   sanitizeInput,
   validateOrder,
-  validateOrderStatus
+  validateOrderStatus,
+  validatePaymentStatus,
+  validatePaymentMethod,
+  validateObjectId
 };
