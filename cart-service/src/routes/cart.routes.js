@@ -7,11 +7,13 @@ const {
   clearCart,
 } = require("../controllers/cart.controller");
 const authMiddleware = require("../middlewares/authMiddleware");
+const rateLimiter = require("../middlewares/rateLimiter");
 
 const router = express.Router();
 
-// All routes require authentication
+// All routes require authentication and rate limiting
 router.use(authMiddleware);
+router.use(rateLimiter(60000, 100)); // 100 requests per minute per user
 
 // Get user's cart
 router.get("/", getCart);
