@@ -9,6 +9,7 @@ Complete M-Pesa (Safaricom Daraja API) integration has been successfully impleme
 ### What Was Implemented
 
 #### 1. M-Pesa Client (100%)
+
 - ✅ OAuth2 token management with automatic refresh
 - ✅ STK Push (Lipa Na M-Pesa Online) API integration
 - ✅ STK Push Query for transaction status
@@ -18,6 +19,7 @@ Complete M-Pesa (Safaricom Daraja API) integration has been successfully impleme
 - ✅ Comprehensive error handling
 
 #### 2. M-Pesa Service Layer (100%)
+
 - ✅ Phone number validation and formatting
 - ✅ Payment initiation with STK Push
 - ✅ Payment status queries
@@ -26,6 +28,7 @@ Complete M-Pesa (Safaricom Daraja API) integration has been successfully impleme
 - ✅ Order-based payment retrieval
 
 #### 3. M-Pesa Controllers (100%)
+
 - ✅ Initiate payment endpoint
 - ✅ Query payment status endpoint
 - ✅ Callback handler endpoint
@@ -33,6 +36,7 @@ Complete M-Pesa (Safaricom Daraja API) integration has been successfully impleme
 - ✅ Refund payment endpoint (admin only)
 
 #### 4. Database Updates (100%)
+
 - ✅ Multi-provider support (stripe/mpesa)
 - ✅ M-Pesa-specific fields (checkoutRequestId, transactionId, receiptNumber)
 - ✅ Phone number field
@@ -40,18 +44,21 @@ Complete M-Pesa (Safaricom Daraja API) integration has been successfully impleme
 - ✅ Pre-save validation hooks
 
 #### 5. API Routes (100%)
+
 - ✅ Rate-limited M-Pesa endpoints
 - ✅ JWT authentication on protected routes
 - ✅ Admin-only refund endpoint
 - ✅ Public callback endpoint
 
 #### 6. Testing (100%)
+
 - ✅ 21 M-Pesa unit tests
 - ✅ 89% service layer coverage
 - ✅ Mocked M-Pesa API for reliable testing
 - ✅ All tests passing
 
 #### 7. Documentation (100%)
+
 - ✅ Complete API documentation
 - ✅ Setup guide for Daraja portal
 - ✅ Environment configuration
@@ -62,7 +69,8 @@ Complete M-Pesa (Safaricom Daraja API) integration has been successfully impleme
 ## Technical Architecture
 
 ### M-Pesa Service Structure
-```
+
+```sh
 payment-service/
 ├── src/
 │   ├── config/
@@ -82,12 +90,14 @@ payment-service/
 ### M-Pesa API Client
 
 **Key Features:**
+
 - Automatic OAuth token caching and refresh
 - Environment-based URLs (sandbox/production)
 - Comprehensive error handling
 - Base64 password generation for requests
 
 **Methods:**
+
 - `getAccessToken()` - OAuth2 authentication
 - `stkPush()` - Initiate payment
 - `stkPushQuery()` - Query payment status
@@ -97,7 +107,8 @@ payment-service/
 ### Payment Flow
 
 #### STK Push Flow
-```
+
+```sh
 1. Client → POST /api/mpesa/initiate
    {
      orderId: "xxx",
@@ -126,7 +137,8 @@ payment-service/
 ```
 
 #### B2C Refund Flow
-```
+
+```text
 1. Admin → POST /api/mpesa/:checkoutRequestId/refund
    {
      amount: 500  // Optional, defaults to full
@@ -151,6 +163,7 @@ payment-service/
 ## API Endpoints
 
 ### 1. Initiate M-Pesa Payment
+
 ```http
 POST /api/mpesa/initiate
 Authorization: Bearer <token>
@@ -177,6 +190,7 @@ Response: 201 Created
 ```
 
 ### 2. Query Payment Status
+
 ```http
 GET /api/mpesa/query/:checkoutRequestId
 Authorization: Bearer <token>
@@ -197,6 +211,7 @@ Response: 200 OK
 ```
 
 ### 3. Handle Callback (Public)
+
 ```http
 POST /api/mpesa/callback
 Content-Type: application/json
@@ -227,6 +242,7 @@ Response: 200 OK
 ```
 
 ### 4. Process Refund (Admin)
+
 ```http
 POST /api/mpesa/:checkoutRequestId/refund
 Authorization: Bearer <admin-token>
@@ -249,6 +265,7 @@ Response: 200 OK
 ```
 
 ### 5. Get Payment by Order
+
 ```http
 GET /api/mpesa/order/:orderId
 Authorization: Bearer <token>
@@ -276,6 +293,7 @@ Supports multiple Kenyan phone formats:
 ## Environment Configuration
 
 ### Required Variables
+
 ```bash
 # M-Pesa Configuration
 MPESA_ENVIRONMENT=sandbox  # or production
@@ -287,6 +305,7 @@ MPESA_CALLBACK_URL=https://your-domain.com/api/mpesa/callback
 ```
 
 ### Optional Variables (for B2C)
+
 ```bash
 MPESA_INITIATOR_NAME=testapi
 MPESA_SECURITY_CREDENTIAL=<encrypted_credential>
@@ -295,6 +314,7 @@ MPESA_SECURITY_CREDENTIAL=<encrypted_credential>
 ## Sandbox Testing
 
 ### Test Credentials
+
 - **Environment**: sandbox
 - **Shortcode**: 174379
 - **Test Phone**: 254708374149
@@ -302,6 +322,7 @@ MPESA_SECURITY_CREDENTIAL=<encrypted_credential>
 - **Amount Range**: 1 - 70,000 KES
 
 ### Getting Sandbox Access
+
 1. Visit [Safaricom Daraja Portal](https://developer.safaricom.co.ke)
 2. Create account and log in
 3. Create a new app
@@ -311,6 +332,7 @@ MPESA_SECURITY_CREDENTIAL=<encrypted_credential>
    - Passkey
 
 ### Testing Flow
+
 ```bash
 # 1. Initiate payment
 curl -X POST http://localhost:5005/api/mpesa/initiate \
@@ -333,22 +355,26 @@ curl http://localhost:5005/api/mpesa/query/ws_CO_xxx \
 ## Security Features
 
 ### Authentication & Authorization
+
 - JWT tokens required for all protected endpoints
 - Admin role required for refund operations
 - Public callback endpoint (verified by M-Pesa)
 
 ### Rate Limiting
+
 - 100 requests per 15 minutes (standard endpoints)
 - 10 requests per 15 minutes (refund endpoint)
 - Applied at route level for defense-in-depth
 
 ### Data Security
+
 - Sensitive credentials in environment variables
 - No hardcoded API keys or secrets
 - Secure password generation for M-Pesa requests
 - OAuth token caching with expiry management
 
 ### Input Validation
+
 - Phone number format validation
 - Amount validation (positive numbers)
 - Order ID validation (MongoDB ObjectId)
@@ -357,6 +383,7 @@ curl http://localhost:5005/api/mpesa/query/ws_CO_xxx \
 ## Error Handling
 
 ### M-Pesa Error Codes
+
 - `0` - Success
 - `1` - Insufficient Balance
 - `1032` - Request Cancelled by User
@@ -365,6 +392,7 @@ curl http://localhost:5005/api/mpesa/query/ws_CO_xxx \
 - Other - Various errors (see M-Pesa documentation)
 
 ### Service Error Responses
+
 ```json
 // Invalid phone number
 {
@@ -388,6 +416,7 @@ curl http://localhost:5005/api/mpesa/query/ws_CO_xxx \
 ## Testing Coverage
 
 ### Unit Tests (21 tests)
+
 - ✅ Phone number validation (5 tests)
 - ✅ Payment initiation (4 tests)
 - ✅ Payment status query (4 tests)
@@ -395,12 +424,14 @@ curl http://localhost:5005/api/mpesa/query/ws_CO_xxx \
 - ✅ Refund processing (5 tests)
 
 ### Coverage Metrics
+
 - Statements: 89.01%
 - Branches: 83.33%
 - Functions: 85.71%
 - Lines: 89.01%
 
 ### Test Scenarios Covered
+
 1. Valid phone number formats
 2. Invalid phone number formats
 3. Successful payment initiation
@@ -418,6 +449,7 @@ curl http://localhost:5005/api/mpesa/query/ws_CO_xxx \
 ### Before Going Live
 
 - [ ] **Switch to Production Environment**
+
   ```bash
   MPESA_ENVIRONMENT=production
   ```
@@ -429,9 +461,11 @@ curl http://localhost:5005/api/mpesa/query/ws_CO_xxx \
   - Go-live approval from Safaricom
 
 - [ ] **Configure Production Callback URL**
+
   ```bash
   MPESA_CALLBACK_URL=https://api.yourdomain.com/api/mpesa/callback
   ```
+
   - Must be HTTPS
   - Must be publicly accessible
   - Must be registered in Daraja portal
@@ -453,7 +487,9 @@ curl http://localhost:5005/api/mpesa/query/ws_CO_xxx \
   - Track transaction success rate
 
 ### Production Credentials
+
 Contact Safaricom to get:
+
 - Production API credentials
 - Production shortcode
 - Production passkey
@@ -463,6 +499,7 @@ Contact Safaricom to get:
 ## Integration with Other Services
 
 ### Order Service Integration
+
 ```javascript
 // When creating order
 1. Order Service → Payment Service: Create payment
@@ -474,6 +511,7 @@ Contact Safaricom to get:
 ```
 
 ### Notification Service Integration
+
 ```javascript
 // Payment notifications
 1. Payment succeeded → Send confirmation email
@@ -484,6 +522,7 @@ Contact Safaricom to get:
 ## Monitoring Recommendations
 
 ### Key Metrics
+
 1. **Payment Success Rate** (target: >95%)
 2. **Average Payment Time** (time from STK to callback)
 3. **Callback Receipt Rate** (should be 100%)
@@ -491,6 +530,7 @@ Contact Safaricom to get:
 5. **Failed Payment Reasons** (track error codes)
 
 ### Alerts
+
 - Payment success rate < 90%
 - Callback not received within 5 minutes
 - High rate of cancelled payments
@@ -498,6 +538,7 @@ Contact Safaricom to get:
 - M-Pesa API errors
 
 ### Logs to Monitor
+
 - STK Push requests and responses
 - Callback payloads
 - Payment status changes
@@ -508,7 +549,7 @@ Contact Safaricom to get:
 
 1. **Currency**: Only supports KES (Kenyan Shillings)
 2. **Region**: Only works for Kenyan phone numbers
-3. **Amount Limits**: 
+3. **Amount Limits**:
    - Minimum: 1 KES
    - Maximum: 70,000 KES per transaction
 4. **Callback Timing**: Can take 5-30 seconds
@@ -517,44 +558,56 @@ Contact Safaricom to get:
 ## Troubleshooting
 
 ### Issue: STK Push Not Received
+
 **Causes:**
+
 - Invalid phone number
 - Customer phone off/out of network
 - M-Pesa service downtime
 
 **Solution:**
+
 - Validate phone number format
 - Ask customer to check phone network
 - Retry after few minutes
 
 ### Issue: Callback Not Received
+
 **Causes:**
+
 - Callback URL not publicly accessible
 - Callback URL not HTTPS (production)
 - Firewall blocking M-Pesa servers
 
 **Solution:**
+
 - Test callback URL with external tool
 - Ensure HTTPS enabled
 - Whitelist M-Pesa IP addresses
 
 ### Issue: Payment Shows Pending Forever
+
 **Causes:**
+
 - Customer didn't complete payment
 - Callback failed to process
 
 **Solution:**
+
 - Query payment status via API
 - Check logs for callback errors
 - Manual status update if needed
 
 ### Issue: Refund Failing
+
 **Causes:**
+
 - Invalid B2C credentials
 - Insufficient balance in B2C account
 - Customer number changed
 
 **Solution:**
+
 - Verify B2C credentials
 - Check M-Pesa B2C balance
 - Contact customer for updated number
@@ -577,17 +630,20 @@ While the implementation is production-ready, these could be added:
 ## Compliance & Security
 
 ### PCI DSS Compliance
+
 - No card data stored
 - All payment processing via M-Pesa
 - No PCI DSS requirements for M-Pesa
 
 ### Data Protection
+
 - Customer phone numbers encrypted at rest
 - Transaction IDs are public-safe (no PII)
 - M-Pesa receipts stored securely
 - Audit logs for all transactions
 
 ### GDPR Considerations
+
 - Customer consent for payment processing
 - Right to access payment history
 - Right to erasure (after retention period)
@@ -596,11 +652,13 @@ While the implementation is production-ready, these could be added:
 ## Support & Resources
 
 ### Safaricom Resources
+
 - [Daraja API Documentation](https://developer.safaricom.co.ke/docs)
 - [Daraja API Portal](https://developer.safaricom.co.ke)
-- Support Email: apisupport@safaricom.co.ke
+- Support Email: <apisupport@safaricom.co.ke>
 
 ### Internal Documentation
+
 - Payment Service README: `/payment-service/README.md`
 - API Documentation: Service endpoints section
 - Test Guide: This document
@@ -608,6 +666,7 @@ While the implementation is production-ready, these could be added:
 ## Conclusion
 
 The M-Pesa integration is **fully implemented and production-ready**:
+
 - ✅ Complete STK Push and B2C implementation
 - ✅ 21/21 tests passing (89% coverage)
 - ✅ Zero security vulnerabilities

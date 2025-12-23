@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
  */
 const paymentRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 100,
   message: {
     error: 'Too many requests',
     message: 'Too many payment requests from this IP, please try again later.',
@@ -20,8 +20,8 @@ const paymentRateLimiter = rateLimit({
  * Stricter rate limiter for sensitive operations like refunds
  */
 const strictRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   message: {
     error: 'Too many requests',
     message: 'Too many refund requests from this IP, please try again later.',

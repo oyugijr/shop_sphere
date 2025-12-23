@@ -4,29 +4,32 @@ Production-ready payment processing service for ShopSphere supporting **Stripe**
 
 ## Features
 
-- 💳 **Stripe Integration**: Full integration with Stripe Payment Intents API
-- 📱 **M-Pesa Integration**: Complete Safaricom M-Pesa Daraja API integration (STK Push & B2C)
-- 💰 **PayPal Integration**: Complete PayPal Orders API v2 integration
-- 🔒 **Secure**: JWT authentication, webhook signature verification
-- 📊 **Complete Payment Lifecycle**: Create, confirm, cancel, and refund payments
-- 🔔 **Webhook Support**: Real-time payment status updates via webhooks
-- 📈 **Payment Analytics**: Track payment statistics and history
-- 🧪 **Well-Tested**: Comprehensive test coverage (49 tests passing)
-- 🐳 **Docker Ready**: Containerized for easy deployment
+- **Stripe Integration**: Full integration with Stripe Payment Intents API
+- **M-Pesa Integration**: Complete Safaricom M-Pesa Daraja API integration (STK Push & B2C)
+- **PayPal Integration**: Complete PayPal Orders API v2 integration
+- **Secure**: JWT authentication, webhook signature verification
+- **Complete Payment Lifecycle**: Create, confirm, cancel, and refund payments
+- **Webhook Support**: Real-time payment status updates via webhooks
+- **Payment Analytics**: Track payment statistics and history
+- **Well-Tested**: Comprehensive test coverage (49 tests passing)
+- **Docker Ready**: Containerized for easy deployment
 
 ## Supported Payment Methods
 
 ### 1. Stripe (International Payments)
+
 - Credit/Debit cards
 - Digital wallets (Apple Pay, Google Pay)
 - All Stripe-supported payment methods
 
 ### 2. M-Pesa (Kenya Mobile Money)
+
 - STK Push (Lipa Na M-Pesa Online)
 - B2C payments for refunds
 - Real-time callback notifications
 
 ### 3. PayPal (Global Digital Payments)
+
 - PayPal account payments
 - Credit/Debit cards via PayPal
 - Multi-currency support
@@ -36,7 +39,8 @@ Production-ready payment processing service for ShopSphere supporting **Stripe**
 
 ### Payment Intent Management
 
-#### Create Payment Intent
+### Create Payment Intent
+
 ```bash
 POST /api/payments/intent
 Authorization: Bearer <token>
@@ -48,17 +52,19 @@ Content-Type: application/json
   "currency": "usd",
   "metadata": {
     "productName": "Premium Laptop"
-  }
+   }
 }
 ```
 
 #### Confirm Payment
+
 ```bash
 POST /api/payments/:paymentIntentId/confirm
 Authorization: Bearer <token>
 ```
 
 #### Cancel Payment
+
 ```bash
 POST /api/payments/:paymentIntentId/cancel
 Authorization: Bearer <token>
@@ -67,24 +73,28 @@ Authorization: Bearer <token>
 ### Payment Queries
 
 #### Get Payment Status
+
 ```bash
 GET /api/payments/status/:paymentIntentId
 Authorization: Bearer <token>
 ```
 
 #### Get Payment by Order ID
+
 ```bash
 GET /api/payments/order/:orderId
 Authorization: Bearer <token>
 ```
 
 #### Get User Payment History
+
 ```bash
 GET /api/payments/user?limit=50
 Authorization: Bearer <token>
 ```
 
 #### Get Payment Statistics
+
 ```bash
 GET /api/payments/stats?startDate=2024-01-01&endDate=2024-12-31
 Authorization: Bearer <token>
@@ -93,6 +103,7 @@ Authorization: Bearer <token>
 ### Admin Operations
 
 #### Refund Payment
+
 ```bash
 POST /api/payments/:paymentIntentId/refund
 Authorization: Bearer <token>
@@ -106,6 +117,7 @@ Content-Type: application/json
 ### Stripe Webhooks
 
 #### Webhook Endpoint
+
 ```bash
 POST /api/payments/webhook
 Stripe-Signature: <signature>
@@ -124,6 +136,7 @@ Content-Type: application/json
 ### M-Pesa Payment Management
 
 #### Initiate M-Pesa Payment (STK Push)
+
 ```bash
 POST /api/mpesa/initiate
 Authorization: Bearer <token>
@@ -153,6 +166,7 @@ Response:
 ```
 
 #### Query M-Pesa Payment Status
+
 ```bash
 GET /api/mpesa/query/:checkoutRequestId
 Authorization: Bearer <token>
@@ -175,12 +189,14 @@ Response:
 ```
 
 #### Get M-Pesa Payment by Order ID
+
 ```bash
 GET /api/mpesa/order/:orderId
 Authorization: Bearer <token>
 ```
 
 #### Refund M-Pesa Payment (Admin Only)
+
 ```bash
 POST /api/mpesa/:checkoutRequestId/refund
 Authorization: Bearer <token>
@@ -194,6 +210,7 @@ Content-Type: application/json
 ### M-Pesa Callback
 
 #### Callback Endpoint (Public)
+
 ```bash
 POST /api/mpesa/callback
 Content-Type: application/json
@@ -206,6 +223,7 @@ Content-Type: application/json
 ## Phone Number Formats
 
 M-Pesa accepts Kenyan phone numbers in multiple formats:
+
 - `254712345678` (international format)
 - `0712345678` (local format with leading zero)
 - `712345678` (without country code or zero)
@@ -217,6 +235,7 @@ All formats are automatically converted to `254XXXXXXXXX` format.
 ### PayPal Payment Management
 
 #### Create PayPal Order
+
 ```bash
 POST /api/paypal/create
 Authorization: ******
@@ -245,7 +264,9 @@ Response:
 ```
 
 #### Capture PayPal Payment
+
 After customer approves payment on PayPal, capture the payment:
+
 ```bash
 POST /api/paypal/:paypalOrderId/capture
 Authorization: ******
@@ -268,6 +289,7 @@ Response:
 ```
 
 #### Get PayPal Payment Status
+
 ```bash
 GET /api/paypal/status/:paypalOrderId
 Authorization: ******
@@ -286,18 +308,21 @@ Response:
 ```
 
 #### Get PayPal Payment by Order ID
+
 ```bash
 GET /api/paypal/order/:orderId
 Authorization: ******
 ```
 
 #### Cancel PayPal Order
+
 ```bash
 POST /api/paypal/:paypalOrderId/cancel
 Authorization: ******
 ```
 
 #### Refund PayPal Payment (Admin Only)
+
 ```bash
 POST /api/paypal/:paypalOrderId/refund
 Authorization: ******
@@ -328,6 +353,7 @@ Response:
 5. **Order Fulfillment**: Once captured, fulfill the order
 
 **Frontend Integration Example:**
+
 ```javascript
 // 1. Create PayPal order
 const response = await fetch('/api/paypal/create', {
@@ -363,23 +389,27 @@ if (payment.status === 'succeeded') {
 }
 ```
 
+```sh
 GET /api/payments/status/:paymentIntentId
 Authorization: Bearer <token>
 ```
 
 #### Get Payment by Order ID
+
 ```bash
 GET /api/payments/order/:orderId
 Authorization: Bearer <token>
 ```
 
-#### Get User Payment History
+### Get User Payment History
+
 ```bash
 GET /api/payments/user?limit=50
 Authorization: Bearer <token>
 ```
 
-#### Get Payment Statistics
+### Get Payment Statistics
+
 ```bash
 GET /api/payments/stats?startDate=2024-01-01&endDate=2024-12-31
 Authorization: Bearer <token>
@@ -388,6 +418,7 @@ Authorization: Bearer <token>
 ### Admin Operations
 
 #### Refund Payment
+
 ```bash
 POST /api/payments/:paymentIntentId/refund
 Authorization: Bearer <admin-token>
@@ -401,6 +432,7 @@ Content-Type: application/json
 ### Webhooks
 
 #### Stripe Webhook Endpoint
+
 ```bash
 POST /api/payments/webhook
 Stripe-Signature: <signature>
@@ -452,6 +484,7 @@ NODE_ENV=production
 ## Setup
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
@@ -461,6 +494,7 @@ npm install
 1. Create a Stripe account at [stripe.com](https://stripe.com)
 2. Get your API keys from the [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
 3. Add keys to your `.env` file:
+
    ```
    STRIPE_SECRET_KEY=sk_test_your_secret_key
    STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
@@ -479,12 +513,14 @@ npm install
    - Passkey (from Daraja sandbox or production credentials)
 
 3. **Register Callback URLs**
+
    ```bash
    # Your callback URL must be publicly accessible
    MPESA_CALLBACK_URL=https://your-domain.com/api/mpesa/callback
    ```
 
 4. **Test with Sandbox**
+
    ```bash
    MPESA_ENVIRONMENT=sandbox
    MPESA_CONSUMER_KEY=<sandbox_consumer_key>
@@ -501,6 +537,7 @@ npm install
 ### 4. Configure Webhooks
 
 **Stripe:**
+
 1. Go to [Stripe Webhooks](https://dashboard.stripe.com/webhooks)
 2. Add endpoint: `https://your-domain.com/api/payments/webhook`
 3. Select events to listen for:
@@ -512,6 +549,7 @@ npm install
 4. Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET`
 
 **M-Pesa:**
+
 - Callbacks are automatically handled at `/api/mpesa/callback`
 - Ensure this URL is publicly accessible and registered in Daraja portal
 - M-Pesa will send callbacks for payment status updates
@@ -528,6 +566,7 @@ npm install
    - Get your Client ID and Secret from the app details
 
 3. **Set Environment**
+
    ```bash
    # For testing
    PAYPAL_ENVIRONMENT=sandbox
@@ -541,6 +580,7 @@ npm install
    ```
 
 4. **Configure Return URLs**
+
    ```bash
    PAYPAL_RETURN_URL=https://your-domain.com/payment/success
    PAYPAL_CANCEL_URL=https://your-domain.com/payment/cancel
@@ -554,16 +594,19 @@ npm install
 ### 6. Start Service
 
 **Development:**
+
 ```bash
 npm run dev
 ```
 
 **Production:**
+
 ```bash
 npm start
 ```
 
 **Docker:**
+
 ```bash
 docker-compose up payment-service
 ```
@@ -583,52 +626,66 @@ npm test -- --coverage
 
 ## Payment Flow
 
-### Stripe Payment Flow
+### **Stripe Payment Flow**
 
 ### 1. Create Payment Intent
+
 Client requests to create a payment intent with order details:
+
 - Amount (in cents)
 - Currency
 - Order ID
 - User ID (from JWT)
 
 ### 2. Client Completes Payment
+
 Frontend uses Stripe.js to collect payment details and confirms payment with the `client_secret`.
 
 ### 3. Webhook Notification
+
 Stripe sends webhook events to update payment status in real-time:
+
 - `payment_intent.succeeded` → Status: succeeded
 - `payment_intent.payment_failed` → Status: failed
 - etc.
 
 ### 4. Order Fulfillment
+
 Once payment succeeds, the order service is notified to fulfill the order.
 
-### M-Pesa Payment Flow (STK Push)
+### **M-Pesa Payment Flow (STK Push)**
 
 ### 1. Initiate STK Push
+
 Client requests M-Pesa payment:
+
 - Amount (in KES)
 - Phone number
 - Order ID
 
 ### 2. STK Push Sent
+
 - Service sends STK Push to customer's phone
 - Customer receives prompt on their phone
 - Customer enters M-Pesa PIN to authorize payment
 
 ### 3. Callback Received
-M-Pesa sends callback to service:
+
+M-Pesa sends callback to service:   
+
 - `ResultCode: 0` → Payment succeeded
 - `ResultCode: 1032` → Payment canceled by user
 - Other codes → Payment failed
 
 ### 4. Status Update
+
 Payment status is automatically updated based on callback:
+
 - Success: Order can be fulfilled
 - Failed/Canceled: Customer can retry payment
 
 ### 5. Order Fulfillment
+
 Once payment succeeds, the order service is notified to fulfill the order.
 
 ## Multi-Provider Support
@@ -639,13 +696,14 @@ The payment service supports both Stripe and M-Pesa simultaneously:
 - **M-Pesa**: For Kenya mobile money payments
 
 Choose provider based on:
+
 - Customer location (Kenya = M-Pesa option, International = Stripe)
 - Payment method preference
 - Currency (KES = M-Pesa, USD/EUR/etc = Stripe)
 
 ## Payment Service Architecture
 
-```
+```sh
 ┌─────────────────┐
 │   Client App    │
 └────────┬────────┘
@@ -681,6 +739,7 @@ Choose provider based on:
 ## Data Model
 
 ### Payment Schema
+
 ```javascript
 {
   orderId: ObjectId,                    // Reference to order
@@ -710,12 +769,12 @@ Choose provider based on:
 ```
 
 ### Indexes
+
 - `{ orderId: 1, status: 1 }` - Query payments by order and status
 - `{ userId: 1, createdAt: -1 }` - User payment history
 - `{ provider: 1, status: 1 }` - Provider-specific queries
 - `{ stripePaymentIntentId: 1 }` - Stripe payment lookups (sparse)
 - `{ mpesaCheckoutRequestId: 1 }` - M-Pesa payment lookups (sparse)
-
 
 ## Health Check
 
@@ -743,6 +802,7 @@ All errors follow a consistent format:
 ```
 
 Common HTTP status codes:
+
 - `200`: Success
 - `201`: Created
 - `400`: Bad Request (invalid input)
@@ -768,6 +828,7 @@ Common HTTP status codes:
 ### Monitoring
 
 Monitor these metrics:
+
 - Payment success rate
 - Average payment processing time
 - Failed payment reasons
@@ -777,12 +838,14 @@ Monitor these metrics:
 ## Troubleshooting
 
 ### Webhook Issues
+
 - Verify webhook signature is enabled
 - Check `STRIPE_WEBHOOK_SECRET` is correct
 - Ensure endpoint is publicly accessible
 - Test with Stripe CLI: `stripe trigger payment_intent.succeeded`
 
 ### Payment Failures
+
 - Check Stripe Dashboard for detailed error messages
 - Verify API keys are correct
 - Ensure amounts are in cents (not dollars)
@@ -833,4 +896,4 @@ MIT
 
 ## Support
 
-For issues or questions, please open an issue on GitHub or contact support@shopsphere.com.
+For issues or questions, please open an issue on GitHub or contact <support@shopsphere.com>.
