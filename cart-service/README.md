@@ -1,0 +1,275 @@
+# Cart Service
+
+A production-ready shopping cart microservice for the ShopSphere e-commerce platform.
+
+## Overview
+
+The Cart Service handles all shopping cart operations including adding items, updating quantities, removing items, and clearing the cart. It validates products against the Product Service and maintains cart state in MongoDB.
+
+## Features
+
+- ✅ **Production-Ready**: No mocks, real database operations
+- ✅ **Product Validation**: Validates products and stock levels in real-time
+- ✅ **Authentication**: JWT-based authentication for all endpoints
+- ✅ **Data Integrity**: Prevents duplicate products and validates quantities
+- ✅ **Automatic Calculations**: Automatically calculates subtotals and totals
+- ✅ **Error Handling**: Comprehensive error handling with meaningful messages
+- ✅ **Stock Validation**: Checks product availability before adding to cart
+- ✅ **RESTful API**: Clean and intuitive API design
+
+## API Endpoints
+
+All endpoints require authentication via JWT token in the Authorization header.
+
+### Get Cart
+```http
+GET /api/cart
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "userId": "507f1f77bcf86cd799439011",
+  "items": [
+    {
+      "productId": "507f1f77bcf86cd799439012",
+      "name": "Laptop",
+      "price": 999.99,
+      "quantity": 2,
+      "subtotal": 1999.98
+    }
+  ],
+  "totalPrice": 1999.98,
+  "totalItems": 2,
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+### Add Item to Cart
+```http
+POST /api/cart/items
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "productId": "507f1f77bcf86cd799439012",
+  "name": "Laptop",
+  "price": 999.99,
+  "quantity": 1
+}
+```
+
+**Response:** Updated cart object
+
+### Update Item Quantity
+```http
+PUT /api/cart/items/:productId
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "quantity": 3
+}
+```
+
+**Response:** Updated cart object
+
+### Remove Item from Cart
+```http
+DELETE /api/cart/items/:productId
+Authorization: Bearer <token>
+```
+
+**Response:** Updated cart object
+
+### Clear Cart
+```http
+DELETE /api/cart
+Authorization: Bearer <token>
+```
+
+**Response:** Empty cart object
+
+## Environment Variables
+
+```env
+PORT=5006
+MONGO_URI=mongodb://mongodb:27017/shopSphere
+JWT_SECRET=your_jwt_secret
+PRODUCT_SERVICE_URL=http://product-service:5002
+NODE_ENV=development
+```
+
+## Data Model
+
+### Cart Schema
+
+```javascript
+{
+  userId: ObjectId (unique, indexed),
+  items: [
+    {
+      productId: ObjectId,
+      name: String,
+      price: Number,
+      quantity: Number,
+      subtotal: Number
+    }
+  ],
+  totalPrice: Number,
+  totalItems: Number,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Validations
+
+- User ID is required and unique (one cart per user)
+- Product ID, name, price, and quantity are required for each item
+- Quantity must be a positive integer
+- Price cannot be negative
+- No duplicate products in cart
+- Automatic calculation of subtotals and totals
+
+## Business Logic
+
+### Product Validation
+
+Before adding or updating items, the service:
+1. Validates that the product exists via Product Service
+2. Checks that sufficient stock is available
+3. Returns meaningful error messages if validation fails
+
+### Quantity Updates
+
+- Setting quantity to 0 removes the item from cart
+- Quantity must be a positive integer
+- Stock levels are validated before updating
+
+### Cart Creation
+
+- Cart is automatically created when a user first adds an item
+- Each user can have only one active cart
+- Cart persists across sessions
+
+## Error Handling
+
+The service provides detailed error messages:
+
+- `400 Bad Request`: Invalid input or insufficient stock
+- `401 Unauthorized`: Missing or invalid authentication token
+- `404 Not Found`: Cart or product not found
+- `503 Service Unavailable`: Product service is unavailable
+- `500 Internal Server Error`: Unexpected errors
+
+## Development
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Run Locally
+
+```bash
+npm start
+```
+
+### Run in Development Mode
+
+```bash
+npm run dev
+```
+
+### Run Tests
+
+```bash
+npm test
+```
+
+## Docker
+
+### Build Image
+
+```bash
+docker build -t cart-service .
+```
+
+### Run Container
+
+```bash
+docker run -p 5006:5006 --env-file .env cart-service
+```
+
+## Architecture
+
+The Cart Service follows a clean architecture pattern:
+
+```
+app.js
+└── routes/
+    └── controllers/
+        └── services/
+            └── repositories/
+                └── models/
+```
+
+- **Routes**: Define API endpoints and apply middleware
+- **Controllers**: Handle HTTP requests/responses
+- **Services**: Contain business logic
+- **Repositories**: Handle database operations
+- **Models**: Define data schemas
+- **Utils**: Helper functions (product validation)
+
+## Integration with Other Services
+
+- **Product Service**: Validates product existence and stock levels
+- **User Service**: JWT tokens generated by User Service are validated
+- **Order Service**: Can retrieve cart data for order creation
+- **API Gateway**: Routes external requests to Cart Service
+
+## Production Considerations
+
+### Performance
+
+- MongoDB indexes on userId for fast lookups
+- Connection pooling for database efficiency
+- Validation caching could be added for high traffic
+
+### Scalability
+
+- Stateless service design allows horizontal scaling
+- Each instance connects to shared MongoDB
+- Can be deployed behind a load balancer
+
+### Security
+
+- JWT authentication on all endpoints
+- Input validation and sanitization
+- Protection against MongoDB injection
+- CORS enabled for cross-origin requests
+
+### Monitoring
+
+- Health check endpoint at `/health`
+- Structured error logging
+- Request/response logging in production
+
+## Testing
+
+The service includes comprehensive tests:
+
+- Unit tests for service layer
+- Integration tests with real database
+- Controller tests with mock requests
+- Repository tests with MongoDB Memory Server
+
+See `/tests` directory for test implementations.
+
+## License
+
+MIT
