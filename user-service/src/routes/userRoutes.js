@@ -1,34 +1,23 @@
-// const express = require("express");
-// const authControllers = require("../controllers/authControllers");
-// const {authMiddleware, authorizeRoles } = require("../middlewares/authMiddleware");
-
-// const router = express.Router();
-
-// router.post("/admin-only", authMiddleware, authorizeRoles("admin"), (req, res) => {
-//   res.json({ message: "This is an admin-only route!" });
-// });
-
-// router.get("/admin-dashboard", verifyAdmin, (req, res) => {
-//     res.json({ message: "Welcome, Admin!" });
-//   });
-
-// router.get("/user-dashboard", authMiddleware, (req, res) => {
-//   res.json({ message: "Welcome to the user dashboard!" });
-// });
-
-// router.post("/register", authControllers.register);
-// router.post("/login", authControllers.login);
-// router.get("/profile", authMiddleware, authControllers.getProfile);
-
-// module.exports = router;
-
 const express = require("express");
-const { getUserProfile } = require("../controllers/userController");
+const userController = require("../controllers/userController");
 const authMiddleware = require("../middlewares/authMiddleware");
+const roleMiddleware = require("../middlewares/roleMiddleware");
+const { apiLimiter } = require("../middlewares/rateLimitMiddleware");
 
 const router = express.Router();
 
-router.get("/profile", authMiddleware, getUserProfile);
+// Protected user routes (authenticated users)
+router.get("/profile", authMiddleware, userController.getUserProfile);
+router.put("/profile", authMiddleware, userController.updateProfile);
+router.put("/password", authMiddleware, userController.changePassword);
+router.get("/audit-logs", authMiddleware, userController.getAuditLogs);
+
+// Admin routes (require admin role)
+router.get("/", authMiddleware, roleMiddleware("admin"), userController.getAllUsers);
+router.get("/:id", authMiddleware, roleMiddleware("admin"), userController.getUserById);
+router.put("/:id/role", authMiddleware, roleMiddleware("admin"), userController.updateUserRole);
+router.delete("/:id", authMiddleware, roleMiddleware("admin"), userController.deleteUser);
+router.get("/:id/audit-logs", authMiddleware, roleMiddleware("admin"), userController.getUserAuditLogsById);
 
 module.exports = router;
 
