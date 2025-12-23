@@ -1,5 +1,6 @@
 const cartRepository = require("../repositories/cartRepository");
 const { validateProduct } = require("../utils/productValidator");
+const { calculateSubtotal } = require("../utils/calculations");
 
 /**
  * Get user's cart, create if doesn't exist
@@ -65,7 +66,7 @@ const addToCart = async (userId, productId, quantity, price, name) => {
   await validateProduct(productId, quantity);
 
   // Calculate subtotal
-  const subtotal = Math.round(quantity * price * 100) / 100;
+  const subtotal = calculateSubtotal(quantity, price);
 
   // Add or update item in cart
   const cart = await cartRepository.addOrUpdateItem(userId, {

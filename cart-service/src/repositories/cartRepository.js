@@ -1,4 +1,5 @@
 const Cart = require("../models/Cart.model");
+const { calculateSubtotal } = require("../utils/calculations");
 
 /**
  * Find cart by user ID
@@ -67,8 +68,10 @@ const addOrUpdateItem = async (userId, item) => {
   if (existingItemIndex > -1) {
     // Update existing item quantity
     cart.items[existingItemIndex].quantity += item.quantity;
-    cart.items[existingItemIndex].subtotal = 
-      Math.round(cart.items[existingItemIndex].quantity * cart.items[existingItemIndex].price * 100) / 100;
+    cart.items[existingItemIndex].subtotal = calculateSubtotal(
+      cart.items[existingItemIndex].quantity,
+      cart.items[existingItemIndex].price
+    );
   } else {
     // Add new item
     cart.items.push(item);
@@ -105,8 +108,10 @@ const updateItemQuantity = async (userId, productId, quantity) => {
   } else {
     // Update quantity
     cart.items[itemIndex].quantity = quantity;
-    cart.items[itemIndex].subtotal = 
-      Math.round(cart.items[itemIndex].quantity * cart.items[itemIndex].price * 100) / 100;
+    cart.items[itemIndex].subtotal = calculateSubtotal(
+      cart.items[itemIndex].quantity,
+      cart.items[itemIndex].price
+    );
   }
 
   return await cart.save();

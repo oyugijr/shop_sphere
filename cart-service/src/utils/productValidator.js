@@ -34,7 +34,8 @@ const validateProduct = async (productId, quantity) => {
       if (error.response.status === 404) {
         throw new Error("Product not found");
       }
-      throw new Error(`Product validation failed: ${error.response.data.error || error.message}`);
+      // Don't leak internal error details from product service
+      throw new Error("Product validation failed. Please try again.");
     } else if (error.request) {
       // Request was made but no response received
       throw new Error("Product service is unavailable");
