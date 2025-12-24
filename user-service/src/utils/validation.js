@@ -132,7 +132,7 @@ const validatePasswordChange = (data) => {
 module.exports = {
   validateEmail,
   validatePassword,
-  validatePhone,
+  validatePhone, 
   sanitizeInput,
   validateUserRegistration,
   validateUserUpdate,
