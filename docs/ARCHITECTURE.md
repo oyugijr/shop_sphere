@@ -176,6 +176,51 @@ ShopSphere is a microservices-based e-commerce platform designed for scalability
 }
 ```
 
+### 6. Cart Service
+**Technology**: Node.js, Express, MongoDB, Axios
+
+**Responsibilities**:
+- Shopping cart management for users
+- Add/remove/update cart items
+- Real-time product stock validation
+- Calculate cart totals and subtotals
+- Integration with Product Service for validation
+
+**Endpoints**:
+- `GET /api/cart` - Get user's cart (auth required)
+- `POST /api/cart/items` - Add item to cart (auth required)
+- `PUT /api/cart/items/:productId` - Update item quantity (auth required)
+- `DELETE /api/cart/items/:productId` - Remove item from cart (auth required)
+- `DELETE /api/cart` - Clear cart (auth required)
+
+**Database Schema**:
+```javascript
+{
+  userId: ObjectId (unique, indexed),
+  items: [
+    {
+      productId: ObjectId,
+      name: String,
+      price: Number,
+      quantity: Number,
+      subtotal: Number
+    }
+  ],
+  totalPrice: Number,
+  totalItems: Number,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+**Key Features**:
+- One cart per user (userId is unique)
+- Automatic total calculation with pre-save hooks
+- Product validation before adding to cart
+- Stock level checking via Product Service
+- No duplicate products in cart
+- Comprehensive error handling
+
 ## Data Flow Examples
 
 ### User Registration Flow
@@ -200,6 +245,16 @@ ShopSphere is a microservices-based e-commerce platform designed for scalability
 2. API Gateway routes to Product Service
 3. Product Service queries MongoDB with filters
 4. Results returned through API Gateway to client
+
+### Cart Management Flow
+1. Client sends POST request to add item to cart via API Gateway
+2. API Gateway routes to Cart Service
+3. Cart Service validates user authentication (JWT)
+4. Cart Service calls Product Service to validate product and check stock
+5. If validation passes, item is added to cart
+6. Cart totals are automatically calculated
+7. Updated cart returned to client
+8. If stock insufficient or product not found, error returned
 
 ## Communication Patterns
 
@@ -235,12 +290,14 @@ ShopSphere is a microservices-based e-commerce platform designed for scalability
 - `users` - User accounts and profiles
 - `products` - Product catalog
 - `orders` - Order records
+- `carts` - Shopping carts (one per user)
 - `notifications` - Notification history
 
 ### Indexes
 - User email (unique)
 - Product category
 - Order userId
+- Cart userId (unique)
 - Timestamps for sorting
 
 ## Scalability Considerations
@@ -297,11 +354,11 @@ All services expose `/health` endpoint for:
 
 ## Future Enhancements
 
-1. **Payment Service**: Integration with payment gateways
+1. ~~**Payment Service**: Integration with payment gateways~~ ✅ IMPLEMENTED
 2. **Search Service**: Elasticsearch for advanced product search
 3. **Analytics Service**: Business intelligence and reporting
 4. **Image Service**: Image processing and CDN integration
 5. **Review Service**: Product reviews and ratings
-6. **Cart Service**: Shopping cart management
+6. ~~**Cart Service**: Shopping cart management~~ ✅ IMPLEMENTED
 7. **API Documentation**: Swagger/OpenAPI integration
 8. **Service Mesh**: Istio for advanced traffic management

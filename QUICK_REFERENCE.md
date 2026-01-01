@@ -3,6 +3,7 @@
 ## Critical Issues Fixed ✅
 
 ### 1. Notification Service
+
 - ✅ Created missing `queue.js` configuration file
 - ✅ Added Redis container to `docker-compose.yml`
 - ✅ Updated `.env.example` with Redis and Brevo configuration
@@ -11,6 +12,7 @@
 ## How to Get Started
 
 ### Quick Start (Docker)
+
 ```bash
 # Clone the repository
 git clone https://github.com/oyugijr/shop_sphere.git
@@ -34,6 +36,7 @@ curl http://localhost:5004/health
 ```
 
 ### Local Development
+
 ```bash
 # Install dependencies for each service
 cd api-gateway && npm install && cd ..
@@ -56,6 +59,7 @@ cd api-gateway && npm run dev
 ## What's Implemented
 
 ### ✅ Working Features
+
 1. **User Management**
    - Registration (POST `/api/auth/register`)
    - Login (POST `/api/auth/login`)
@@ -82,11 +86,13 @@ cd api-gateway && npm run dev
    - Mark as read (PATCH `/api/notifications/:id/read`) - Auth required
 
 ### ⚠️ Partially Implemented
+
 1. **Testing** - Basic structure exists, needs implementation
 2. **Search/Filtering** - Only basic listing available
 3. **Error Handling** - Partially implemented across services
 
 ### ❌ Not Implemented
+
 1. **Shopping Cart Service** - Critical missing feature
 2. **Payment Service** - Critical missing feature
 3. **Product Reviews & Ratings**
@@ -100,6 +106,7 @@ cd api-gateway && npm run dev
 ## Common Tasks
 
 ### Register a New User
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
@@ -111,6 +118,7 @@ curl -X POST http://localhost:3000/api/auth/register \
 ```
 
 ### Login
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
@@ -121,6 +129,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 ```
 
 ### Create a Product (Admin)
+
 ```bash
 curl -X POST http://localhost:3000/api/products \
   -H "Content-Type: application/json" \
@@ -136,6 +145,7 @@ curl -X POST http://localhost:3000/api/products \
 ```
 
 ### Create an Order
+
 ```bash
 curl -X POST http://localhost:3000/api/orders \
   -H "Content-Type: application/json" \
@@ -152,6 +162,7 @@ curl -X POST http://localhost:3000/api/orders \
 ```
 
 ### Send a Notification
+
 ```bash
 curl -X POST http://localhost:3000/api/notifications/send \
   -H "Content-Type: application/json" \
@@ -166,6 +177,7 @@ curl -X POST http://localhost:3000/api/notifications/send \
 ## Environment Variables Reference
 
 ### Required Variables
+
 ```env
 # Critical - Must be set
 JWT_SECRET=your_secure_secret_here
@@ -176,6 +188,7 @@ BREVO_API_KEY=your_brevo_api_key
 ```
 
 ### Optional Variables
+
 ```env
 # Service Configuration
 NODE_ENV=development
@@ -199,22 +212,26 @@ RATE_LIMIT_MAX_REQUESTS=100
 ## Troubleshooting
 
 ### Service Won't Start
+
 1. Check if MongoDB is running: `docker ps | grep mongo`
 2. Check if Redis is running: `docker ps | grep redis`
 3. Check logs: `docker logs shopsphere-[service-name]`
 4. Verify environment variables are set
 
 ### Can't Connect to Services
+
 1. Verify all containers are running: `docker-compose ps`
 2. Check network connectivity: `docker network inspect shopsphere-network`
 3. Verify ports are not already in use: `netstat -an | grep [PORT]`
 
 ### Notification Service Issues
+
 1. Verify Redis is running and accessible
 2. Check BREVO_API_KEY is set correctly
 3. Check worker logs: `docker logs shopsphere-notification-service`
 
 ### Database Connection Issues
+
 1. Verify MONGO_URI is correct
 2. Check MongoDB container is running
 3. Test connection: `docker exec -it shopsphere-mongo mongosh`
@@ -222,6 +239,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 ## Next Steps for Development
 
 ### Priority 1: Critical Features
+
 1. Implement Shopping Cart Service
    - Create new microservice
    - Add cart model
@@ -235,6 +253,7 @@ RATE_LIMIT_MAX_REQUESTS=100
    - Link with order service
 
 ### Priority 2: Enhance Existing Features
+
 1. Add Product Search & Filtering
    - Add query parameters to product endpoints
    - Implement pagination
@@ -248,6 +267,7 @@ RATE_LIMIT_MAX_REQUESTS=100
    - Add CI/CD with automated testing
 
 ### Priority 3: Production Readiness
+
 1. Add Monitoring
    - Implement Prometheus metrics
    - Create Grafana dashboards
@@ -275,6 +295,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 ## Support
 
 For issues and questions:
+
 1. Check the documentation in `/docs`
 2. Review `IMPLEMENTATION_STATUS.md` for known issues
 3. Check existing GitHub issues

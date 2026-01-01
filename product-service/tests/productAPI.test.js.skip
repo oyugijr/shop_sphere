@@ -1,0 +1,497 @@
+/**
+ * API Endpoint Tests for Product Service
+ * Tests HTTP endpoints with real Express app and MongoDB
+ */
+const request = require('supertest');
+const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
+const jwt = require('jsonwebtoken');
+const Product = require('../src/models/Product.model');
+
+let app;
+let mongoServer;
+let authToken;
+
+describe('Product API Endpoints', () => {
+  // Setup: Start MongoDB Memory Server and Express app
+  beforeAll(async () => {
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    process.env.MONGO_URI = mongoUri;
+    process.env.JWT_SECRET = 'test_secret';
+    process.env.NODE_ENV = 'test';
+
+    // Import app after setting environment variables
+    app = require('../app');
+
+    // Wait for database connection
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Create test JWT token
+    authToken = jwt.sign(
+      { id: 'testuser123', email: 'test@example.com' },
+      process.env.JWT_SECRET
+    );
+  });
+
+  // Cleanup: Clear database after each test
+  afterEach(async () => {
+    await Product.deleteMany({});
+  });
+
+  // Teardown: Stop MongoDB Memory Server
+  afterAll(async () => {
+    await mongoose.disconnect();
+    await mongoServer.stop();
+  });
+
+  describe('GET /health', () => {
+    it('should return health status', async () => {
+      const response = await request(app)
+        .get('/health')
+        .expect(200);
+
+      expect(response.body.status).toBe('healthy');
+      expect(response.body.service).toBe('product-service');
+      expect(response.body.database.connected).toBe(true);
+    });
+  });
+
+  describe('GET /api/products', () => {
+    beforeEach(async () => {
+      // Create test products
+      await Product.insertMany([
+        {
+          name: 'Laptop',
+          description: 'High-performance laptop',
+          price: 1200,
+          stock: 5,
+          category: 'electronics'
+        },
+        {
+          name: 'Mouse',
+          description: 'Wireless mouse',
+          price: 25,
+          stock: 50,
+          category: 'electronics'
+        },
+        {
+          name: 'Desk',
+          description: 'Standing desk',
+          price: 500,
+          stock: 10,
+          category: 'furniture'
+        }
+      ]);
+    });
+
+    it('should get all products', async () => {
+      const response = await request(app)
+        .get('/api/products')
+        .expect(200);
+
+      expect(response.body.products).toHaveLength(3);
+      expect(response.body.pagination.total).toBe(3);
+    });
+
+    it('should support pagination', async () => {
+      const response = await request(app)
+        .get('/api/products?page=1&limit=2')
+        .expect(200);
+
+      expect(response.body.products).toHaveLength(2);
+      expect(response.body.pagination.hasNext).toBe(true);
+    });
+
+    it('should filter by category', async () => {
+      const response = await request(app)
+        .get('/api/products?category=electronics')
+        .expect(200);
+
+      expect(response.body.products).toHaveLength(2);
+      expect(response.body.products.every(p => p.category === 'electronics')).toBe(true);
+    });
+
+    it('should support sorting', async () => {
+      const response = await request(app)
+        .get('/api/products?sortBy=price&sortOrder=asc')
+        .expect(200);
+
+      const prices = response.body.products.map(p => p.price);
+      expect(prices[0]).toBeLessThan(prices[1]);
+    });
+  });
+
+  describe('GET /api/products/:id', () => {
+    let testProduct;
+
+    beforeEach(async () => {
+      testProduct = await Product.create({
+        name: 'Test Product',
+        description: 'Test description',
+        price: 100,
+        stock: 10,
+        category: 'test'
+      });
+    });
+
+    it('should get a product by ID', async () => {
+      const response = await request(app)
+        .get(`/api/products/${testProduct._id}`)
+        .expect(200);
+
+      expect(response.body._id).toBe(testProduct._id.toString());
+      expect(response.body.name).toBe('Test Product');
+    });
+
+    it('should return 400 for invalid ID format', async () => {
+      const response = await request(app)
+        .get('/api/products/invalid-id')
+        .expect(400);
+
+      expect(response.body.error).toBeDefined();
+    });
+
+    it('should return 404 for non-existent product', async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+      await request(app)
+        .get(`/api/products/${fakeId}`)
+        .expect(404);
+    });
+  });
+
+  describe('POST /api/products', () => {
+    it('should create a new product with authentication', async () => {
+      const productData = {
+        name: 'New Laptop',
+        description: 'Brand new laptop for testing',
+        price: 1500,
+        stock: 3,
+        category: 'electronics'
+      };
+
+      const response = await request(app)
+        .post('/api/products')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(productData)
+        .expect(201);
+
+      expect(response.body.product.name).toBe(productData.name);
+      expect(response.body.product.price).toBe(productData.price);
+      expect(response.body.message).toBe('Product created successfully');
+    });
+
+    it('should require authentication', async () => {
+      const productData = {
+        name: 'Test Product',
+        description: 'Test description',
+        price: 100,
+        stock: 10,
+        category: 'test'
+      };
+
+      await request(app)
+        .post('/api/products')
+        .send(productData)
+        .expect(401);
+    });
+
+    it('should validate required fields', async () => {
+      const invalidData = {
+        name: 'Test Product'
+        // Missing required fields
+      };
+
+      const response = await request(app)
+        .post('/api/products')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(invalidData)
+        .expect(400);
+
+      expect(response.body.errors).toBeDefined();
+    });
+
+    it('should validate price is non-negative', async () => {
+      const invalidData = {
+        name: 'Test Product',
+        description: 'Valid description',
+        price: -100,
+        stock: 10,
+        category: 'test'
+      };
+
+      const response = await request(app)
+        .post('/api/products')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(invalidData)
+        .expect(400);
+
+      expect(response.body.errors).toBeDefined();
+    });
+
+    it('should sanitize input to prevent XSS', async () => {
+      const xssData = {
+        name: '<script>alert("xss")</script>Product',
+        description: 'Valid description for product',
+        price: 100,
+        stock: 10,
+        category: 'test'
+      };
+
+      const response = await request(app)
+        .post('/api/products')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(xssData)
+        .expect(201);
+
+      expect(response.body.product.name).not.toContain('<script>');
+    });
+  });
+
+  describe('PUT /api/products/:id', () => {
+    let testProduct;
+
+    beforeEach(async () => {
+      testProduct = await Product.create({
+        name: 'Test Product',
+        description: 'Test description',
+        price: 100,
+        stock: 10,
+        category: 'test'
+      });
+    });
+
+    it('should update a product with authentication', async () => {
+      const updateData = {
+        price: 150,
+        stock: 8
+      };
+
+      const response = await request(app)
+        .put(`/api/products/${testProduct._id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData)
+        .expect(200);
+
+      expect(response.body.product.price).toBe(150);
+      expect(response.body.product.stock).toBe(8);
+    });
+
+    it('should require authentication', async () => {
+      await request(app)
+        .put(`/api/products/${testProduct._id}`)
+        .send({ price: 150 })
+        .expect(401);
+    });
+
+    it('should validate update data', async () => {
+      const invalidData = {
+        price: -50 // Negative price
+      };
+
+      const response = await request(app)
+        .put(`/api/products/${testProduct._id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(invalidData)
+        .expect(400);
+
+      expect(response.body.errors).toBeDefined();
+    });
+  });
+
+  describe('DELETE /api/products/:id', () => {
+    let testProduct;
+
+    beforeEach(async () => {
+      testProduct = await Product.create({
+        name: 'Test Product',
+        description: 'Test description',
+        price: 100,
+        stock: 10,
+        category: 'test'
+      });
+    });
+
+    it('should soft delete a product with authentication', async () => {
+      const response = await request(app)
+        .delete(`/api/products/${testProduct._id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.message).toBe('Product deleted successfully');
+
+      // Verify product is soft deleted
+      const deletedProduct = await Product.findById(testProduct._id);
+      expect(deletedProduct.isDeleted).toBe(true);
+    });
+
+    it('should require authentication', async () => {
+      await request(app)
+        .delete(`/api/products/${testProduct._id}`)
+        .expect(401);
+    });
+  });
+
+  describe('GET /api/products/search', () => {
+    beforeEach(async () => {
+      await Product.insertMany([
+        {
+          name: 'Gaming Laptop',
+          description: 'High-performance gaming laptop',
+          price: 2000,
+          stock: 5,
+          category: 'electronics'
+        },
+        {
+          name: 'Office Laptop',
+          description: 'Business laptop for office work',
+          price: 1000,
+          stock: 10,
+          category: 'electronics'
+        },
+        {
+          name: 'Wireless Keyboard',
+          description: 'Mechanical keyboard',
+          price: 80,
+          stock: 20,
+          category: 'accessories'
+        }
+      ]);
+    });
+
+    it('should search products by text', async () => {
+      const response = await request(app)
+        .get('/api/products/search?q=laptop')
+        .expect(200);
+
+      expect(response.body.products.length).toBeGreaterThan(0);
+    });
+
+    it('should require search query', async () => {
+      await request(app)
+        .get('/api/products/search')
+        .expect(400);
+    });
+  });
+
+  describe('Stock Management Endpoints', () => {
+    let testProduct;
+
+    beforeEach(async () => {
+      testProduct = await Product.create({
+        name: 'Test Product',
+        description: 'Test description',
+        price: 100,
+        stock: 10,
+        category: 'test'
+      });
+    });
+
+    describe('POST /api/products/:id/stock/increase', () => {
+      it('should increase stock', async () => {
+        const response = await request(app)
+          .post(`/api/products/${testProduct._id}/stock/increase`)
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ quantity: 5 })
+          .expect(200);
+
+        expect(response.body.product.stock).toBe(15);
+      });
+
+      it('should require authentication', async () => {
+        await request(app)
+          .post(`/api/products/${testProduct._id}/stock/increase`)
+          .send({ quantity: 5 })
+          .expect(401);
+      });
+    });
+
+    describe('POST /api/products/:id/stock/decrease', () => {
+      it('should decrease stock', async () => {
+        const response = await request(app)
+          .post(`/api/products/${testProduct._id}/stock/decrease`)
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ quantity: 3 })
+          .expect(200);
+
+        expect(response.body.product.stock).toBe(7);
+      });
+
+      it('should not allow decrease below zero', async () => {
+        await request(app)
+          .post(`/api/products/${testProduct._id}/stock/decrease`)
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ quantity: 20 })
+          .expect(500);
+      });
+    });
+
+    describe('GET /api/products/:id/stock/check', () => {
+      it('should check stock availability', async () => {
+        const response = await request(app)
+          .get(`/api/products/${testProduct._id}/stock/check?quantity=5`)
+          .expect(200);
+
+        expect(response.body.available).toBe(true);
+        expect(response.body.currentStock).toBe(10);
+      });
+
+      it('should report insufficient stock', async () => {
+        const response = await request(app)
+          .get(`/api/products/${testProduct._id}/stock/check?quantity=20`)
+          .expect(200);
+
+        expect(response.body.available).toBe(false);
+      });
+    });
+  });
+
+  describe('GET /api/products/stats', () => {
+    beforeEach(async () => {
+      await Product.insertMany([
+        {
+          name: 'Product 1',
+          description: 'Description 1',
+          price: 100,
+          stock: 10,
+          category: 'test'
+        },
+        {
+          name: 'Product 2',
+          description: 'Description 2',
+          price: 200,
+          stock: 20,
+          category: 'test'
+        }
+      ]);
+    });
+
+    it('should return product statistics', async () => {
+      const response = await request(app)
+        .get('/api/products/stats')
+        .expect(200);
+
+      expect(response.body.totalProducts).toBe(2);
+      expect(response.body.activeProducts).toBe(2);
+      expect(response.body.totalStock).toBe(30);
+    });
+  });
+
+  describe('Rate Limiting', () => {
+    it('should enforce rate limits', async () => {
+      // Make multiple requests quickly
+      const requests = [];
+      for (let i = 0; i < 105; i++) {
+        requests.push(
+          request(app)
+            .get('/api/products')
+        );
+      }
+
+      const responses = await Promise.all(requests);
+      const rateLimited = responses.some(r => r.status === 429);
+      
+      expect(rateLimited).toBe(true);
+    });
+  });
+});

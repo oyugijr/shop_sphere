@@ -26,8 +26,9 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 - **RESTful APIs**: Clean and well-documented API endpoints
 - **JWT Authentication**: Secure user authentication and authorization
 - **Role-Based Access Control**: Admin and user roles with appropriate permissions
+- **Payment Processing**: Complete Stripe integration for secure payments
 - **Health Checks**: Monitor service availability and health
-- **Rate Limiting**: Protection against API abuse
+- **Rate Limiting**: Protection against API abuse at multiple levels
 - **Docker Support**: Easy deployment with Docker Compose
 - **MongoDB Database**: Flexible NoSQL database for all services
 - **Notification System**: Email notifications with queue-based processing
@@ -41,16 +42,22 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 | **Product Service** | 5002 | Product catalog and inventory management |
 | **Order Service** | 5003 | Order creation, tracking, and management |
 | **Notification Service** | 5004 | Email and push notifications with queue-based processing |
+| **Payment Service** | 5005 | Payment processing with Stripe integration |
+| **Cart Service** | 5006 | Shopping cart management with real-time stock validation |
 | **MongoDB** | 27017 | Database for all services |
 | **Redis** | 6379 | Message queue and caching for notification service |
 | **MongoDB Express** | 8081 | Web-based MongoDB admin interface |
 
 ## 🏗️ Architecture
 
-```
-Client → API Gateway → [User/Product/Order Services] → MongoDB
+```sh
+Client → API Gateway → [User/Product/Order/Cart/Payment Services] → MongoDB
                     ↓
               Notification Service → Redis Queue → Email/SMS/WhatsApp
+                    ↓
+              Payment Service → Stripe API
+                    ↓
+              Cart Service ↔ Product Service (stock validation)
 ```
 
 For detailed architecture information, see [Architecture Documentation](./docs/ARCHITECTURE.md).
@@ -65,31 +72,35 @@ For detailed architecture information, see [Architecture Documentation](./docs/A
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/oyugijr/shop_sphere.git
    cd shop_sphere
    ```
 
 2. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Edit `.env` with your configuration (especially MongoDB URI and JWT secret).
 
 3. **Start all services**
+
    ```bash
    docker-compose up -d
    ```
 
 4. **Verify services are running**
+
    ```bash
    curl http://localhost:3000/health
    ```
 
 5. **Access the application**
-   - API Gateway: http://localhost:3000
-   - MongoDB Admin UI: http://localhost:8081
+   - API Gateway: <http://localhost:3000>
+   - MongoDB Admin UI: <http://localhost:8081>
 
 ### Stop Services
 
@@ -98,6 +109,7 @@ docker-compose down
 ```
 
 To remove all data:
+
 ```bash
 docker-compose down -v
 ```
@@ -105,19 +117,23 @@ docker-compose down -v
 ## 📚 Documentation
 
 ### Getting Started
+
 - **[Quick Reference](./QUICK_REFERENCE.md)** - Fast setup and common tasks
 - **[Setup Guide](./docs/SETUP.md)** - Detailed installation and configuration
 
 ### Technical Documentation
+
 - **[API Documentation](./docs/API.md)** - Complete API reference
 - **[Architecture Guide](./docs/ARCHITECTURE.md)** - System design and data flow
 
 ### Project Status & Planning
+
 - **[Implementation Status](./IMPLEMENTATION_STATUS.md)** - What's implemented, partially done, and missing
 - **[Development Roadmap](./ROADMAP.md)** - Prioritized implementation plan
 - **[Review Summary](./REVIEW_SUMMARY.md)** - Latest project review findings
 
 ### Contributing
+
 - **[Contributing Guidelines](./CONTRIBUTING.md)** - How to contribute
 - **[Enhancement History](./ENHANCEMENTS.md)** - Previous improvements log
 
@@ -150,6 +166,7 @@ cd order-service && npm test
 ### Local Development Setup
 
 1. Install dependencies for each service:
+
    ```bash
    cd api-gateway && npm install
    cd ../user-service && npm install
@@ -159,11 +176,13 @@ cd order-service && npm test
    ```
 
 2. Start MongoDB:
+
    ```bash
    docker run -d -p 27017:27017 --name mongodb mongo:latest
    ```
 
 3. Run services individually:
+
    ```bash
    cd user-service && node app.js
    ```
@@ -183,6 +202,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📝 API Examples
 
 ### User Registration
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
@@ -190,6 +210,7 @@ curl -X POST http://localhost:3000/api/auth/register \
 ```
 
 ### Create Product
+
 ```bash
 curl -X POST http://localhost:3000/api/products \
   -H "Content-Type: application/json" \
@@ -198,6 +219,7 @@ curl -X POST http://localhost:3000/api/products \
 ```
 
 ### Create Order
+
 ```bash
 curl -X POST http://localhost:3000/api/orders \
   -H "Content-Type: application/json" \
@@ -205,12 +227,20 @@ curl -X POST http://localhost:3000/api/orders \
   -d '{"items":[{"productId":"PRODUCT_ID","quantity":1,"price":999.99}]}'
 ```
 
+### Create Payment Intent
+
+```bash
+curl -X POST http://localhost:5005/api/payments/intent \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"orderId":"ORDER_ID","amount":99999,"currency":"usd"}'
+```
+
 ## 🔮 Future Enhancements
 
-- [ ] Payment service integration (Stripe/PayPal)
 - [ ] Advanced search with Elasticsearch
 - [ ] Product reviews and ratings
-- [ ] Shopping cart service
+- [x] Shopping cart service (IMPLEMENTED)
 - [ ] Real-time inventory updates
 - [ ] Kubernetes deployment manifests
 - [ ] CI/CD pipeline
@@ -223,8 +253,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 👨‍💻 Author
 
-**Oyugi Jr**
-- GitHub: [@oyugijr](https://github.com/oyugijr)
+**Oyugi Mourice** - GitHub: [@oyugijr](https://github.com/oyugijr)
 
 ## 🙏 Acknowledgments
 
@@ -234,5 +263,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - All contributors and supporters
 
 ---
-
-**Made with ❤️ for the developer community**

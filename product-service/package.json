@@ -6,9 +6,22 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:unit": "jest tests/validation.test.js",
+    "test:integration": "jest tests/productIntegration.test.js",
+    "test:api": "jest tests/productAPI.test.js",
+    "lint": "echo 'Linting not configured yet'",
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix"
   },
-  "keywords": ["microservices", "product-catalog", "inventory", "ecommerce"],
+  "keywords": [
+    "microservices",
+    "product-catalog",
+    "inventory",
+    "ecommerce",
+    "rest-api"
+  ],
   "author": "Oyugi Jr",
   "license": "MIT",
   "type": "commonjs",
@@ -17,9 +30,13 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mongoose": "^8.10.1"
+    "mongoose": "^8.10.1",
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.1.4",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.0.0"
   }
 }

@@ -1,15 +1,18 @@
 # ShopSphere - Implementation Roadmap
 
 ## Overview
+
 This document provides a prioritized roadmap for completing the ShopSphere e-commerce platform implementation.
 
 ---
 
 ## Phase 1: Critical Fixes (COMPLETED ✅)
+
 **Timeline:** Immediate  
 **Status:** ✅ DONE
 
 ### Completed Tasks
+
 - [x] Create missing notification service `queue.js` configuration
 - [x] Add Redis container to docker-compose.yml
 - [x] Update environment variables in `.env.example`
@@ -22,16 +25,20 @@ This document provides a prioritized roadmap for completing the ShopSphere e-com
 ---
 
 ## Phase 2: Critical Features (HIGH PRIORITY)
+
 **Timeline:** 1-2 weeks  
 **Status:** 🔄 PENDING
 
 ### 2.1 Shopping Cart Service
+
 **Priority:** P0 - Critical for e-commerce  
 **Estimated Effort:** 2-3 days
 
 **Implementation Steps:**
+
 1. Create `cart-service` directory structure
 2. Implement Cart model:
+
    ```javascript
    {
      userId: ObjectId,
@@ -46,6 +53,7 @@ This document provides a prioritized roadmap for completing the ShopSphere e-com
      expiresAt: Date
    }
    ```
+
 3. Create cart CRUD endpoints:
    - `POST /api/cart` - Create/Get cart
    - `POST /api/cart/items` - Add item to cart
@@ -57,6 +65,7 @@ This document provides a prioritized roadmap for completing the ShopSphere e-com
 6. Implement cart-to-order conversion
 
 **Files to Create:**
+
 - `/cart-service/app.js`
 - `/cart-service/src/models/Cart.js`
 - `/cart-service/src/controllers/cartController.js`
@@ -67,10 +76,12 @@ This document provides a prioritized roadmap for completing the ShopSphere e-com
 - `/cart-service/package.json`
 
 ### 2.2 Payment Service Integration
+
 **Priority:** P0 - Critical for e-commerce  
 **Estimated Effort:** 3-4 days
 
 **Implementation Steps:**
+
 1. Create `payment-service` directory structure
 2. Integrate Stripe SDK
 3. Implement Payment model for transaction tracking
@@ -84,6 +95,7 @@ This document provides a prioritized roadmap for completing the ShopSphere e-com
 7. Add webhook handling for payment status updates
 
 **Environment Variables Needed:**
+
 ```env
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
@@ -91,10 +103,12 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
 ### 2.3 Stock Management & Validation
+
 **Priority:** P0 - Data integrity  
 **Estimated Effort:** 1-2 days
 
 **Implementation Steps:**
+
 1. Add stock validation before order creation
 2. Implement stock deduction on order placement
 3. Implement stock restoration on order cancellation
@@ -102,6 +116,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 5. Create low stock alerts
 
 **Files to Modify:**
+
 - `/order-service/src/services/orderService.js`
 - `/product-service/src/services/productService.js`
 - `/product-service/src/repositories/productRepository.js`
@@ -109,14 +124,17 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ---
 
 ## Phase 3: Enhanced User Experience (MEDIUM PRIORITY)
+
 **Timeline:** 2-3 weeks  
 **Status:** 🔄 PENDING
 
 ### 3.1 Product Search & Filtering
+
 **Priority:** P1  
 **Estimated Effort:** 2-3 days
 
 **Implementation Steps:**
+
 1. Add query parameters to product endpoints:
    - Search: `?search=laptop`
    - Category: `?category=electronics`
@@ -129,15 +147,18 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 4. Implement faceted search results
 
 **Files to Modify:**
+
 - `/product-service/src/controllers/product.controller.js`
 - `/product-service/src/services/productService.js`
 - `/product-service/src/repositories/productRepository.js`
 
 ### 3.2 User Account Management
+
 **Priority:** P1  
 **Estimated Effort:** 2-3 days
 
 **Implementation Steps:**
+
 1. Implement password reset flow:
    - `POST /api/auth/forgot-password` - Request reset
    - `POST /api/auth/reset-password/:token` - Reset password
@@ -152,15 +173,18 @@ STRIPE_WEBHOOK_SECRET=whsec_...
    - Set default address
 
 **Files to Create/Modify:**
+
 - `/user-service/src/models/Address.js`
 - `/user-service/src/controllers/authController.js`
 - `/user-service/src/services/authService.js`
 
 ### 3.3 Product Reviews & Ratings
+
 **Priority:** P1  
 **Estimated Effort:** 2-3 days
 
 **Implementation Steps:**
+
 1. Create Review model in product-service
 2. Implement review endpoints:
    - `POST /api/products/:id/reviews` - Add review
@@ -174,14 +198,17 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ---
 
 ## Phase 4: Testing & Quality (HIGH PRIORITY)
+
 **Timeline:** 2-3 weeks  
 **Status:** 🔄 PENDING
 
 ### 4.1 Unit Testing
+
 **Priority:** P0  
 **Estimated Effort:** 5-7 days
 
 **Implementation Steps:**
+
 1. Set up Jest configuration for all services
 2. Write unit tests for:
    - Service layer (business logic)
@@ -192,16 +219,19 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 4. Set up test automation
 
 **Test Coverage Goals:**
+
 - Service layer: 90%
 - Repository layer: 85%
 - Controllers: 80%
 - Utilities: 95%
 
 ### 4.2 Integration Testing
+
 **Priority:** P1  
 **Estimated Effort:** 3-4 days
 
 **Implementation Steps:**
+
 1. Set up supertest for API testing
 2. Create test fixtures and data factories
 3. Write integration tests for:
@@ -212,10 +242,12 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 4. Set up test database
 
 ### 4.3 End-to-End Testing
+
 **Priority:** P1  
 **Estimated Effort:** 2-3 days
 
 **Implementation Steps:**
+
 1. Implement E2E test scenarios:
    - Complete user registration to order flow
    - Product search to purchase
@@ -226,14 +258,17 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ---
 
 ## Phase 5: DevOps & Infrastructure (HIGH PRIORITY)
+
 **Timeline:** 1-2 weeks  
 **Status:** 🔄 PENDING
 
 ### 5.1 CI/CD Pipeline
+
 **Priority:** P0  
 **Estimated Effort:** 2-3 days
 
 **Implementation Steps:**
+
 1. Create GitHub Actions workflows:
    - `.github/workflows/ci.yml` - Run tests on PR
    - `.github/workflows/build.yml` - Build Docker images
@@ -244,6 +279,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 5. Add environment-based deployment
 
 **Example Workflow:**
+
 ```yaml
 name: CI
 on: [push, pull_request]
@@ -259,10 +295,12 @@ jobs:
 ```
 
 ### 5.2 Monitoring & Observability
+
 **Priority:** P0  
 **Estimated Effort:** 3-4 days
 
 **Implementation Steps:**
+
 1. Add Prometheus metrics to all services
 2. Create Grafana dashboards
 3. Implement logging aggregation (ELK/Loki)
@@ -271,6 +309,7 @@ jobs:
 6. Create alerting rules
 
 **Metrics to Track:**
+
 - Request rate
 - Response time
 - Error rate
@@ -279,10 +318,12 @@ jobs:
 - Memory/CPU usage
 
 ### 5.3 Kubernetes Deployment
+
 **Priority:** P1  
 **Estimated Effort:** 4-5 days
 
 **Implementation Steps:**
+
 1. Create Kubernetes manifests:
    - Deployments for each service
    - Services for networking
@@ -297,14 +338,17 @@ jobs:
 ---
 
 ## Phase 6: Advanced Features (MEDIUM PRIORITY)
+
 **Timeline:** 3-4 weeks  
 **Status:** 🔄 PENDING
 
 ### 6.1 Advanced Search with Elasticsearch
+
 **Priority:** P2  
 **Estimated Effort:** 4-5 days
 
 **Implementation Steps:**
+
 1. Add Elasticsearch to docker-compose
 2. Create search service or enhance product service
 3. Implement product indexing
@@ -316,10 +360,12 @@ jobs:
 5. Sync product changes to Elasticsearch
 
 ### 6.2 Real-time Features
+
 **Priority:** P2  
 **Estimated Effort:** 3-4 days
 
 **Implementation Steps:**
+
 1. Add Socket.io to services
 2. Implement real-time inventory updates
 3. Add real-time order status updates
@@ -327,10 +373,12 @@ jobs:
 5. Implement live admin dashboard
 
 ### 6.3 Admin Dashboard
+
 **Priority:** P2  
 **Estimated Effort:** 5-7 days
 
 **Implementation Steps:**
+
 1. Create admin-specific endpoints
 2. Add analytics and reporting
 3. Implement user management
@@ -341,14 +389,17 @@ jobs:
 ---
 
 ## Phase 7: Documentation & API (MEDIUM PRIORITY)
+
 **Timeline:** 1 week  
 **Status:** 🔄 PENDING
 
 ### 7.1 API Documentation
+
 **Priority:** P1  
 **Estimated Effort:** 2-3 days
 
 **Implementation Steps:**
+
 1. Add Swagger/OpenAPI to all services
 2. Document all endpoints with JSDoc
 3. Create interactive API documentation
@@ -356,10 +407,12 @@ jobs:
 5. Add code examples
 
 ### 7.2 Operational Documentation
+
 **Priority:** P1  
 **Estimated Effort:** 2-3 days
 
 **Documentation Needed:**
+
 1. Production deployment guide
 2. Monitoring runbooks
 3. Incident response procedures
@@ -370,14 +423,17 @@ jobs:
 ---
 
 ## Phase 8: Security & Compliance (HIGH PRIORITY)
+
 **Timeline:** 1-2 weeks  
 **Status:** 🔄 PENDING
 
 ### 8.1 Security Enhancements
+
 **Priority:** P0  
 **Estimated Effort:** 3-4 days
 
 **Implementation Steps:**
+
 1. Implement API key management
 2. Add per-user rate limiting
 3. Implement request signing
@@ -388,10 +444,12 @@ jobs:
 8. Add XSS protection
 
 ### 8.2 Compliance & Audit
+
 **Priority:** P1  
 **Estimated Effort:** 2-3 days
 
 **Implementation Steps:**
+
 1. Add audit logging
 2. Implement GDPR compliance features
 3. Add data export functionality
@@ -421,6 +479,7 @@ jobs:
 ## Success Criteria
 
 ### Minimum Viable Product (MVP)
+
 - ✅ Phase 1: Critical Fixes
 - ⏳ Phase 2: Critical Features (Cart, Payment, Stock Management)
 - ⏳ Phase 4: Basic Testing
@@ -429,6 +488,7 @@ jobs:
 **MVP Timeline:** 3-4 weeks
 
 ### Production Ready
+
 - All P0 phases complete
 - 80% test coverage
 - Monitoring in place
