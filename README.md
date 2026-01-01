@@ -104,17 +104,36 @@ docker-compose down -v
 
 ## 📚 Documentation
 
+**📖 [Complete Documentation Index](./docs/README.md)** - Navigate all documentation
+
 ### Getting Started
 - **[Quick Reference](./QUICK_REFERENCE.md)** - Fast setup and common tasks
 - **[Setup Guide](./docs/SETUP.md)** - Detailed installation and configuration
+- **[FAQ](./docs/FAQ.md)** - Frequently asked questions
 
 ### Technical Documentation
 - **[API Documentation](./docs/API.md)** - Complete API reference
 - **[Architecture Guide](./docs/ARCHITECTURE.md)** - System design and data flow
+- **[Database Guide](./docs/DATABASE.md)** - Database schema and optimization
+- **[Testing Guide](./docs/TESTING.md)** - Testing strategies and best practices
+
+### Operations & Deployment
+- **[Deployment Guide](./docs/DEPLOYMENT.md)** - Production deployment strategies
+- **[Monitoring Guide](./docs/MONITORING.md)** - Observability and health monitoring
+- **[Security Best Practices](./docs/SECURITY.md)** - Security guidelines
+- **[Troubleshooting Guide](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
+### Service Documentation
+- **[API Gateway](./api-gateway/Readme.md)** - API Gateway service details
+- **[User Service](./user-service/Readme.md)** - Authentication and user management
+- **[Product Service](./product-service/Readme.md)** - Product catalog management
+- **[Order Service](./order-service/Readme.md)** - Order processing
+- **[Notification Service](./notification-service/Readme.md)** - Notification system
 
 ### Project Status & Planning
 - **[Implementation Status](./IMPLEMENTATION_STATUS.md)** - What's implemented, partially done, and missing
 - **[Development Roadmap](./ROADMAP.md)** - Prioritized implementation plan
+- **[Changelog](./docs/CHANGELOG.md)** - Version history and updates
 - **[Review Summary](./REVIEW_SUMMARY.md)** - Latest project review findings
 
 ### Contributing
