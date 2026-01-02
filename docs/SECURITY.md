@@ -703,13 +703,13 @@ snyk monitor
 
 ### Security Incident Response Plan
 
-**1. Detection**
+#### **1. Detection**
 
 - Monitor security logs
 - Set up alerts for suspicious activities
 - Regular security audits
 
-**2. Containment**
+#### **2. Containment**
 
 ```bash
 # Immediately revoke compromised credentials
@@ -718,20 +718,20 @@ snyk monitor
 # Isolate affected services
 ```
 
-**3. Investigation**
+#### **3. Investigation**
 
 - Analyze logs
 - Identify scope of breach
 - Document findings
 
-**4. Remediation**
+#### **4. Remediation**
 
 - Patch vulnerabilities
 - Update dependencies
 - Reset compromised credentials
 - Notify affected users
 
-**5. Prevention**
+#### **5. Prevention**
 
 - Implement additional security measures
 - Update security policies

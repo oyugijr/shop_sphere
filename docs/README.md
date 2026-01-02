@@ -47,25 +47,25 @@ Welcome to the ShopSphere documentation! This index provides quick access to all
 
 ### I want to
 
-**Get Started Quickly**
+#### **Get Started Quickly**
 
 1. [Setup Guide](SETUP.md) - Get the application running
 2. [Quick Reference](../QUICK_REFERENCE.md) - Common commands and tasks
 3. [API Documentation](API.md) - Start making API calls
 
-**Deploy to Production**
+#### **Deploy to Production**
 
 1. [Deployment Guide](DEPLOYMENT.md) - Deployment strategies
 2. [Security Best Practices](SECURITY.md) - Secure your deployment
 3. [Monitoring Guide](MONITORING.md) - Set up monitoring
 
-**Contribute Code**
+#### **Contribute Code**
 
 1. [Contributing Guidelines](../CONTRIBUTING.md) - Contribution process
 2. [Architecture Guide](ARCHITECTURE.md) - Understand the system
 3. [Testing Guide](TESTING.md) - Write and run tests
 
-**Debug Issues**
+#### **Debug Issues**
 
 1. [Troubleshooting Guide](TROUBLESHOOTING.md) - Common problems
 2. [Monitoring Guide](MONITORING.md) - Check service health
