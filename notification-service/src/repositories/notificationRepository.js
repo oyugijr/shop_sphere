@@ -15,4 +15,17 @@ const markAsRead = async (id) => {
   return await Notification.findByIdAndUpdate(id, { status: "sent" }, { new: true });
 };
 
-module.exports = { createNotification, getUserNotifications, markAsRead };
+// Update notification status with additional metadata
+const updateNotificationStatus = async (id, status, metadata = {}) => {
+  return await Notification.findByIdAndUpdate(
+    id,
+    { 
+      status,
+      metadata,
+      updatedAt: new Date()
+    },
+    { new: true }
+  );
+};
+
+module.exports = { createNotification, getUserNotifications, markAsRead, updateNotificationStatus };
