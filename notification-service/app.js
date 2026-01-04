@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./src/config/db");
 const notificationRoutes = require("./src/routes/notificationRoutes");
 const notificationQueue = require("./src/config/queue");
+const errorMiddleware = require("./src/middlewares/errorMiddleware");
 
 dotenv.config();
 connectDB();
@@ -19,6 +20,8 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api/notifications", notificationRoutes);
+
+app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5004;
 app.listen(PORT, () => {
