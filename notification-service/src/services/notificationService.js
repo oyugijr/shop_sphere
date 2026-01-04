@@ -5,8 +5,14 @@ const { redisPub } = require("../config/redisConfig");
 const sendNotification = async (userId, type, contact, message) => {
   const notification = await notificationRepository.createNotification({ userId, type, message });
 
-  // Publish notification event to Redis
-  redisPub.publish("notifications", JSON.stringify({ userId, type, contact, message }));
+  // Publish notification event to Redis with notification ID
+  redisPub.publish("notifications", JSON.stringify({ 
+    userId, 
+    type, 
+    contact, 
+    message,
+    notificationId: notification._id.toString()
+  }));
 
   return notification;
 };
