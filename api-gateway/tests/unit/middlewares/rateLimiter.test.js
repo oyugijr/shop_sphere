@@ -1,9 +1,9 @@
-const rateLimiter = require('../../../src/middlewares/rateLimiter');
-
 describe('Rate Limiter Middleware', () => {
-  let req, res, next;
+  let req, res, next, rateLimiter;
 
   beforeEach(() => {
+    jest.resetModules();
+    rateLimiter = require('../../../src/middlewares/rateLimiter');
     req = {
       ip: '127.0.0.1',
       connection: { remoteAddress: '127.0.0.1' }
