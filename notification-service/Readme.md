@@ -1,30 +1,374 @@
 # Notification Service
 
-The Notification Service handles email, SMS, and push notifications for ShopSphere using a queue-based architecture.
+Production-ready notification service for ShopSphere using queue-based architecture with Bull, Redis, and Brevo API.
 
-## Overview
+## 🚀 Features
 
-The Notification Service provides:
-
-- **Email Notifications**: Send emails via Brevo (formerly Sendinblue)
-- **SMS Notifications**: Send text messages
-- **WhatsApp Notifications**: Send WhatsApp messages
-- **Queue-Based Processing**: Asynchronous notification handling with Redis
-- **Notification History**: Track all sent notifications
-- **Retry Mechanism**: Automatic retry for failed notifications
+- **Email Notifications**: Production-ready HTML email templates
+- **SMS Notifications**: Transactional SMS via Brevo
+- **WhatsApp Notifications**: WhatsApp business messaging
+- **Queue-Based Processing**: Reliable Bull queue with Redis backend
+- **Automatic Retries**: Exponential backoff retry strategy (3 attempts)
+- **Delivery Tracking**: Full notification history and status tracking
+- **Health Monitoring**: Detailed health checks and metrics
+- **Graceful Shutdown**: Clean shutdown handling for zero downtime
+- **Kubernetes Ready**: Liveness and readiness probes included
 
 ## Port
 
 - **Default**: 5004
-- **Configure via**: `NOTIFICATION_SERVICE_PORT` environment variable
+- **Configure via**: `PORT` environment variable
 
 ## Architecture
 
 ```sh
-Application → Redis Queue → Worker → Brevo API → User
-                    ↓
-               Notification DB
+HTTP Request → Service → MongoDB (create notification)
+                   ↓
+         Redis Pub/Sub (publish event)
+                   ↓
+         Worker (subscribe) → Bull Queue → Process Job
+                                              ↓
+                                     Brevo API (send)
+                                              ↓
+                                MongoDB (update status)
 ```
+
+## Quick Start
+
+### With Docker Compose
+
+```bash
+docker-compose up -d notification-service redis mongodb
+```
+
+### Standalone
+
+```bash
+cd notification-service
+npm install
+npm start
+```
+
+## API Endpoints
+
+See [DOCUMENTATION.md](./DOCUMENTATION.md) for complete API reference.
+
+### Core Endpoints
+
+- `POST /api/notifications/send` - Send basic notification
+- `GET /api/notifications/:userId` - Get user notifications
+- `PATCH /api/notifications/:id/read` - Mark as read
+
+### Template Endpoints
+
+- `POST /api/notifications/template/welcome` - Welcome email
+- `POST /api/notifications/template/order-confirmation` - Order confirmation
+- `POST /api/notifications/template/shipping` - Shipping notification
+- `POST /api/notifications/template/payment-confirmation` - Payment receipt
+
+### Health & Monitoring
+
+- `GET /health` - Basic health check
+- `GET /health/detailed` - Detailed health with queue metrics
+- `GET /ready` - Kubernetes readiness probe
+- `GET /live` - Kubernetes liveness probe
+
+## Configuration
+
+### Required Environment Variables
+
+```env
+# MongoDB
+MONGO_URI=mongodb://mongodb:27017/shopSphere
+
+# Redis
+REDIS_URL=redis://redis:6379
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+# Brevo API
+BREVO_API_URL=https://api.brevo.com/v3
+BREVO_API_KEY=your_brevo_api_key_here
+EMAIL_FROM=noreply@shopsphere.com
+EMAIL_FROM_NAME=ShopSphere
+
+# Service
+PORT=5004
+NODE_ENV=production
+```
+
+## Email Templates
+
+### Available Templates
+
+1. **welcome** - Welcome new users
+2. **orderConfirmation** - Order confirmation with details
+3. **orderShipped** - Shipping notification with tracking
+4. **passwordReset** - Password reset with security notice
+5. **paymentConfirmation** - Payment receipt with transaction details
+6. **generic** - Custom flexible template
+
+### Using Templates
+
+```bash
+curl -X POST http://localhost:5004/api/notifications/template/order-confirmation \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "email": "customer@example.com",
+    "orderId": "ORD-12345",
+    "orderDate": "2024-01-04",
+    "total": "99.99"
+  }'
+```
+
+## Database Schema
+
+### Notification Model
+
+```javascript
+{
+  userId: ObjectId,              // Required, indexed
+  type: String,                  // email, sms, whatsapp
+  message: String,               // Required
+  status: String,                // pending, sent, failed (indexed)
+  metadata: Mixed,               // Flexible metadata storage
+  attempts: Number,              // Number of delivery attempts
+  lastAttemptAt: Date,           // Last attempt timestamp
+  createdAt: Date,               // Auto-generated
+  updatedAt: Date                // Auto-generated
+}
+```
+
+### Indexes
+
+- `userId + createdAt` (compound index for efficient user queries)
+- `status + createdAt` (compound index for status filtering)
+
+## Queue System
+
+### Bull Queue Configuration
+
+- **Attempts**: 3 retries with exponential backoff
+- **Backoff**: Starting at 2 seconds, doubling each retry
+- **Completed Jobs**: Keep last 100 for debugging
+- **Failed Jobs**: Retained for analysis
+- **Lock Duration**: 30 seconds
+- **Stalled Check**: Every 30 seconds
+
+### Queue Monitoring
+
+```javascript
+// Get queue health status
+const health = await notificationQueue.getHealthStatus();
+console.log(health);
+// Output:
+// {
+//   status: 'healthy',
+//   queue: 'notifications',
+//   jobs: { waiting: 5, active: 2, completed: 150, failed: 3, delayed: 0 }
+// }
+```
+
+## Testing
+
+### Unit Tests (with mocks)
+
+```bash
+npm test
+```
+
+### Integration Tests (real Redis & MongoDB)
+
+```bash
+npm test -- tests/integration/notificationService.integration.test.js
+```
+
+### Manual Testing
+
+```bash
+# Health check
+curl http://localhost:5004/health
+
+# Detailed health
+curl http://localhost:5004/health/detailed
+
+# Send notification (requires auth)
+curl -X POST http://localhost:5004/api/notifications/send \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "type": "email",
+    "contact": "test@example.com",
+    "message": "Test notification"
+  }'
+```
+
+## Monitoring & Logging
+
+### Structured Logging
+
+All logs include contextual prefixes:
+
+- `[Redis]` - Redis connection events
+- `[Queue]` - Bull queue operations
+- `[Worker]` - Job processing events
+- `[Brevo]` - API calls to Brevo
+- `[Email]`, `[SMS]`, `[WhatsApp]` - Channel-specific events
+
+### Example Logs
+
+```
+[Redis] ✓ Publisher connected
+[Queue] ✓ Notification queue initialized
+[Worker] Notification worker initialized and ready to process jobs
+[Worker] Received email notification for user 507f191e810c19729de860ea
+[Queue] Processing job 1 - email notification for test@example.com
+[Brevo] POST /smtp/email
+[Brevo] ✓ Response received: 201
+[Email] ✓ Email sent to test@example.com - Message ID: abc123
+[Queue] ✓ Job 1 completed successfully
+```
+
+## Error Handling
+
+### Automatic Retries
+
+Failed jobs are retried automatically with exponential backoff:
+
+1. **First attempt**: Immediate
+2. **Second attempt**: After 2 seconds
+3. **Third attempt**: After 4 seconds
+4. **Fourth attempt**: After 8 seconds
+
+### Failed Job Management
+
+Failed jobs are retained in the queue with full error details for analysis.
+
+```bash
+# View failed jobs in Redis
+docker exec -it shopsphere-redis redis-cli
+> LRANGE bull:notifications:failed 0 -1
+```
+
+## Deployment
+
+### Docker
+
+```dockerfile
+FROM node:18
+WORKDIR /app
+COPY package.json ./
+RUN npm install
+COPY . .
+EXPOSE 5004
+CMD ["node", "app.js"]
+```
+
+### Kubernetes
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: notification-service
+        image: shopsphere/notification-service:latest
+        ports:
+        - containerPort: 5004
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 5004
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5004
+```
+
+## Graceful Shutdown
+
+The service handles shutdown signals gracefully:
+
+1. Stop accepting new requests
+2. Wait for active jobs to complete
+3. Close Redis connections
+4. Close MongoDB connection
+5. Exit (timeout: 30 seconds)
+
+## Performance
+
+### Scaling
+
+- **Horizontal Scaling**: Multiple instances share the same Redis queue
+- **Concurrency**: Configure Bull queue concurrency as needed
+- **Rate Limiting**: Respects Brevo API limits (300 requests/minute)
+
+### Optimization Tips
+
+- Monitor queue depth regularly
+- Archive old notifications (>90 days)
+- Use batch processing for bulk notifications
+- Configure appropriate job concurrency
+
+## Troubleshooting
+
+### Queue Not Processing
+
+- Check Redis connection: `redis-cli ping`
+- Verify worker is running in logs
+- Check queue health: `GET /health/detailed`
+
+### Notifications Not Sending
+
+- Verify Brevo API key is valid
+- Check Brevo account status/limits
+- Review failed jobs for error messages
+
+### High Memory Usage
+
+- Check completed job retention (currently 100)
+- Monitor active job count
+- Consider increasing cleanup frequency
+
+## Security
+
+- ✅ API key stored in environment variables
+- ✅ JWT authentication required for all endpoints
+- ✅ TLS/HTTPS in production
+- ✅ Redis AUTH enabled in production
+- ✅ MongoDB authentication and encryption
+
+## Documentation
+
+- [DOCUMENTATION.md](./DOCUMENTATION.md) - Complete API and architecture docs
+- [Main README](../README.md) - Overall project documentation
+- [API Docs](../docs/API.md) - Full API reference
+
+## Future Enhancements
+
+- [ ] Rate limiting per user/IP
+- [ ] Notification preferences management
+- [ ] Webhook endpoints for delivery confirmations
+- [ ] Push notification support (FCM/APNs)
+- [ ] Analytics dashboard
+- [ ] A/B testing for email campaigns
+
+## Contributing
+
+See [Contributing Guide](../CONTRIBUTING.md)
+
+---
+
+**Version**: 1.0.0  
+**Maintained by**: ShopSphere Team  
+**License**: MIT
+
 
 ## API Endpoints
 
