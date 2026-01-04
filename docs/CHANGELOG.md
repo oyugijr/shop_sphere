@@ -54,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2024-12-01
 
-### Added
+### Added (Order Service & Security)
 
 - **Order Service**
   - Order creation and management
@@ -70,7 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced error handling
   - Request/response logging
 
-### Changed
+### Changed (Order Service & Documentation)
 
 - Order model with comprehensive shipping address structure
 - Updated API documentation with order endpoints
@@ -79,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2024-11-15
 
-### Added
+### Added (Core Services & Infrastructure)
 
 - **Core Microservices Architecture**
   - API Gateway service (port 3000)
@@ -136,7 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Setup guide
   - Contributing guidelines
 
-### Changed
+### Changed (Core Services & Infrastructure)
 
 - N/A (initial release)
 

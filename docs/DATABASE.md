@@ -21,7 +21,7 @@ This guide covers database schema, optimization, backup strategies, and best pra
 
 ShopSphere uses MongoDB as its primary database with a microservices architecture where each service has its own logical database or collection namespace.
 
-```
+```sh
 ┌─────────────────────────────────────────┐
 │         MongoDB (Port 27017)            │
 ├─────────────────────────────────────────┤
@@ -38,7 +38,7 @@ ShopSphere uses MongoDB as its primary database with a microservices architectur
 
 **Connection String:**
 
-```
+```sh
 mongodb://localhost:27017/shopSphere          # Local
 mongodb://mongodb:27017/shopSphere            # Docker
 mongodb+srv://user:pass@cluster/shopSphere   # Atlas
@@ -673,7 +673,7 @@ crontab -e
 
 ### Migration Scripts
 
-**Example Migration: Add New Field to Users**
+#### **Example Migration: Add New Field to Users**
 
 ```javascript
 // migrations/add-phone-to-users.js
@@ -750,7 +750,7 @@ mongoose.connect(MONGO_URI, {
 
 ## Best Practices
 
-### Schema Design
+### Schema-Design
 
 - ✅ Denormalize when needed for read performance
 - ✅ Use references for one-to-many relationships

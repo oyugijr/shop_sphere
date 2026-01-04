@@ -10,6 +10,8 @@
 
 This review provides a thorough analysis of the ShopSphere e-commerce microservices platform, identifying what has been implemented, what is partially complete, and what features are missing. Critical issues have been fixed and comprehensive documentation has been added.
 
+> **Status update (January 2026):** Cart and payment services have since been implemented and deployed with full CRUD/business logic. Sections below describing them as missing are preserved for historical traceability.
+
 ---
 
 ## Key Findings
@@ -53,8 +55,8 @@ This review provides a thorough analysis of the ShopSphere e-commerce microservi
 
 ### ❌ Critical Missing Features
 
-1. **Shopping Cart Service** - Essential for e-commerce
-2. **Payment Integration** - Required for transactions
+1. **Shopping Cart Service** - Essential for e-commerce _(✅ Implemented December 2024 — see CART_SERVICE_IMPLEMENTATION.md for full details)_
+2. **Payment Integration** - Required for transactions _(✅ Implemented with Stripe, PayPal, and M-Pesa services — January 2025)_
 3. **Stock Management** - No inventory validation
 4. **CI/CD Pipeline** - No automated testing/deployment
 5. **Monitoring** - No observability tools
@@ -248,7 +250,7 @@ Modified:
 ## Timeline Estimates
 
 | Milestone | Estimated Time | Priority |
-|-----------|---------------|----------|
+| --- | --- | --- |
 | **MVP** (Cart + Payment + Basic Tests) | 3-4 weeks | P0 |
 | **Production Ready** (All P0 + Monitoring) | 11-13 weeks | P0 |
 | **Full Feature Set** (All planned features) | 16-20 weeks | P1-P2 |

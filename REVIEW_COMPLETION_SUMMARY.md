@@ -9,6 +9,8 @@
 
 A thorough per-microservice review has been completed for the ShopSphere e-commerce platform, documenting what should be improved, what should be implemented, and what should NOT be implemented for each service.
 
+> **Status update (January 2026):** Cart and payment services were fully implemented after this review (see CART_SERVICE_IMPLEMENTATION.md and PAYMENT_SERVICE_IMPLEMENTATION.md). References to them being “not implemented” below reflect the December 2024 snapshot only.
+
 ---
 
 ## 📄 New Documentation Created
@@ -55,21 +57,21 @@ A thorough per-microservice review has been completed for the ShopSphere e-comme
 - **Critical Issues:** No email templates, no template variables, no unsubscribe mechanism (compliance risk)
 - **Score:** 6/10
 
-#### 6. Cart Service (Port: Not Assigned)
+#### 6. Cart Service (Port 5006)
 
-- ✅ Implementation: 5% (skeleton only)
-- ❌ Production Ready: NO
-- **Status:** NOT IMPLEMENTED - Only package.json exists
-- **Score:** 0/10
-- **Impact:** ESSENTIAL service missing - users cannot add items to cart
+- ✅ Implementation: 100% (production-grade service with MongoDB, validation, rate limiting)
+- ⚠️ Production Ready: Hardening in progress (guest carts, observability outstanding)
+- **Status:** Implemented December 2024 (see CART_SERVICE_IMPLEMENTATION.md)
+- **Score:** 7/10
+- **Impact:** Enables end-to-end cart workflows (add/update/remove/clear, real-time stock checks)
 
-#### 7. Payment Service (Port: Not Assigned)
+#### 7. Payment Service (Port 5005)
 
-- ✅ Implementation: 5% (skeleton only)
-- ❌ Production Ready: NO
-- **Status:** NOT IMPLEMENTED - Only package.json exists
-- **Score:** 0/10
-- **Impact:** ESSENTIAL service missing - cannot process real payments
+- ✅ Implementation: 85% (Stripe intents, PayPal orders, M-Pesa STK push, webhooks)
+- ⚠️ Production Ready: Needs reconciliation/alerting polish
+- **Status:** Implemented January 2025 with multi-provider support
+- **Score:** 6/10
+- **Impact:** Processes card, wallet, and mobile money flows end-to-end
 
 ---
 
@@ -94,8 +96,8 @@ A thorough per-microservice review has been completed for the ShopSphere e-comme
 
 ### Missing Critical Features
 
-1. **Cart Service** - Not implemented (ESSENTIAL)
-2. **Payment Service** - Not implemented (ESSENTIAL)
+1. **Cart Service** - Harden guest carts + monitoring _(service now implemented)_
+2. **Payment Service** - Add reconciliation + settlement _(service now implemented)_
 3. **Stock Validation** - Orders can be placed without checking stock
 4. **Database Transactions** - Race conditions possible
 5. **Pagination** - Performance bottleneck inevitable
@@ -215,19 +217,19 @@ For each of the 7 microservices, the review documents:
 
 ### Short-term Actions (P1) - Next Priority
 
-6. Add pagination to product/order services
-7. Implement password strength validation
-8. Add email verification flow
-9. Create email templates
-10. Implement Redis-based rate limiting
+1. Add pagination to product/order services
+2. Implement password strength validation
+3. Add email verification flow
+4. Create email templates
+5. Implement Redis-based rate limiting
 
 ### Long-term Actions (P2) - Future Enhancements
 
-11. Add product search and filtering
-12. Implement 2FA
-13. Add product reviews and ratings
-14. Set up monitoring and observability
-15. Implement CI/CD pipeline
+1. Add product search and filtering
+2. Implement 2FA
+3. Add product reviews and ratings
+4. Set up monitoring and observability
+5. Implement CI/CD pipeline
 
 ---
 

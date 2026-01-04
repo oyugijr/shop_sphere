@@ -1,4 +1,4 @@
- ShopSphere Troubleshooting Guide
+# ShopSphere Troubleshooting Guide
 
 This guide helps you diagnose and resolve common issues in ShopSphere.
 

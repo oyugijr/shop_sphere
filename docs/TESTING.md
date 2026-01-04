@@ -1,4 +1,4 @@
- ShopSphere Testing Guide
+# ShopSphere Testing Guide
 
 This guide covers testing strategies, best practices, and how to write and run tests for ShopSphere.
 
@@ -35,7 +35,7 @@ ShopSphere follows a comprehensive testing pyramid:
 ### Test Types
 
 | Type | Purpose | Tool | Coverage Goal |
-|------|---------|------|---------------|
+| --- | --- | --- | --- |
 | **Unit** | Test individual functions/methods | Jest | 70%+ |
 | **Integration** | Test API endpoints and services | Jest + Supertest | 60%+ |
 | **E2E** | Test complete user flows | Cypress/Playwright | Critical paths |
@@ -347,7 +347,7 @@ describe('Auth Service', () => {
       await expect(
         authService.login({
           email: 'john@example.com',
-          password: 'wrongpassword',
+          password: 'wrong-password',
         })
       ).rejects.toThrow('Invalid credentials');
     });
@@ -514,7 +514,7 @@ describe('Auth API', () => {
     it('should return 401 for invalid password', async () => {
       const response = await request(app).post('/api/auth/login').send({
         email: 'john@example.com',
-        password: 'wrongpassword',
+        password: 'wrong-password',
       });
 
       expect(response.status).toBe(401);

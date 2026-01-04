@@ -20,7 +20,7 @@ This guide covers deployment strategies and best practices for deploying ShopSph
 ShopSphere can be deployed using several strategies:
 
 | Option | Best For | Complexity | Scalability |
-|--------|----------|------------|-------------|
+| -------- | ---------- | ------------ | --------------- |
 | Docker Compose | Development, Small Production | Low | Limited |
 | Docker Swarm | Medium-scale Production | Medium | Good |
 | Kubernetes | Enterprise, Large-scale | High | Excellent |
@@ -116,7 +116,7 @@ docker stack services shopsphere
 
 ## Kubernetes Deployment
 
-### Prerequisites
+### Prerequisite
 
 - Kubernetes cluster (v1.20+)
 - kubectl configured
@@ -172,7 +172,7 @@ spec:
     targetPort: 27017
 ```
 
-### Step 3: Deploy Services
+### Step 3: Deploy-Services
 
 ```yaml
 # user-service-deployment.yaml
@@ -584,7 +584,7 @@ mongorestore --uri="mongodb://localhost:27017/shopSphere" --drop /path/to/backup
 - Optimize database queries
 - Implement connection pooling
 
-### Security
+### Security-Best Practices
 
 - Use HTTPS everywhere
 - Implement API rate limiting

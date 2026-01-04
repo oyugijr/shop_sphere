@@ -1,308 +1,243 @@
-# ShopSphere - Quick Reference Guide
+# ShopSphere – Quick Reference Guide
 
-## Critical Issues Fixed ✅
+> Keep this doc open while you work. It lists the fastest path to spin up services, run everyday flows, and diagnose trouble. Deep dives live in `/docs`.
 
-### 1. Notification Service
+## 1. Prerequisites & Workspace Setup
 
-- ✅ Created missing `queue.js` configuration file
-- ✅ Added Redis container to `docker-compose.yml`
-- ✅ Updated `.env.example` with Redis and Brevo configuration
-- ✅ Initialized notification worker in `app.js`
-
-## How to Get Started
-
-### Quick Start (Docker)
+| Tool | Minimum | Notes |
+| --- | --- | --- |
+| Node.js | 18.x | Required for every microservice |
+| npm | 9+ | Ships with Node 18 |
+| Docker Desktop | Latest | Runs MongoDB, Redis, and optional service stack |
+| MongoDB Shell (`mongosh`) | Latest | Inspect dev data |
+| Redis CLI (`redis-cli`) | Latest | Debug rate limiter & notification queue |
+| Stripe / PayPal / M-Pesa / Brevo creds | Active accounts | Store in per-service `.env` files (never commit) |
 
 ```bash
-# Clone the repository
 git clone https://github.com/oyugijr/shop_sphere.git
 cd shop_sphere
-
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env and add your configuration
-# Required: JWT_SECRET, BREVO_API_KEY (for notifications)
-
-# Start all services
-docker-compose up -d
-
-# Verify all services are running
-curl http://localhost:3000/health
-curl http://localhost:5001/health
-curl http://localhost:5002/health
-curl http://localhost:5003/health
-curl http://localhost:5004/health
+cp .env.example .env   # then populate secrets
 ```
 
-### Local Development
+## 2. Service Bootstrap Cheatsheet
+
+### Docker-first (recommended)
 
 ```bash
-# Install dependencies for each service
-cd api-gateway && npm install && cd ..
-cd user-service && npm install && cd ..
-cd product-service && npm install && cd ..
-cd order-service && npm install && cd ..
-cd notification-service && npm install && cd ..
+docker compose up -d mongodb redis
+# bring all services up (feel free to trim the list during dev)
+docker compose up -d api-gateway user-service product-service order-service \
+  notification-service cart-service payment-service
+```
 
-# Start MongoDB and Redis
-docker-compose up -d mongodb redis
+### Local dev with live reload
 
-# Start services in separate terminals
+```bash
+for svc in api-gateway user-service product-service order-service \
+           notification-service cart-service payment-service; do
+  (cd $svc && npm install)
+done
+
+docker compose up -d mongodb redis
+
+# Run each service (one terminal per service for nodemon-style reload)
 cd user-service && npm run dev
 cd product-service && npm run dev
-cd order-service && npm run dev
-cd notification-service && npm run dev
-cd api-gateway && npm run dev
+# ...repeat for remaining services
 ```
 
-## What's Implemented
+| Service | Port | Dev command |
+| --- | --- | --- |
+| API Gateway | 3000 | `cd api-gateway && npm run dev` |
+| User Service | 5001 | `cd user-service && npm run dev` |
+| Product Service | 5002 | `cd product-service && npm run dev` |
+| Order Service | 5003 | `cd order-service && npm run dev` |
+| Notification Service | 5004 | `cd notification-service && npm run dev` |
+| Payment Service | 5005 | `cd payment-service && npm run dev` |
+| Cart Service | 5006 | `cd cart-service && npm run dev` |
 
-### ✅ Working Features
+## 3. Environment Variables Snapshot
 
-1. **User Management**
-   - Registration (POST `/api/auth/register`)
-   - Login (POST `/api/auth/login`)
-   - Get profile (GET `/api/users/:id`)
-   - JWT authentication
-   - Role-based access control
+| Area | Required keys |
+| --- | --- |
+| Core | `JWT_SECRET`, `MONGO_URI`, `ALLOWED_ORIGINS`, `NODE_ENV` |
+| Redis / Queues | `REDIS_HOST`, `REDIS_PORT`, `REDIS_URL` |
+| Product Service | `PRODUCT_SERVICE_URL`, `PRODUCT_SERVICE_PORT` |
+| Cart Service | `PRODUCT_SERVICE_URL`, `JWT_SECRET` |
+| Payment – Stripe | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| Payment – PayPal | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` |
+| Payment – M-Pesa | `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY`, `MPESA_CALLBACK_URL` |
+| Notification | `BREVO_API_KEY`, optional `TWILIO_*`, `FAST2SMS_API_KEY` |
 
-2. **Product Management**
-   - List products (GET `/api/products`)
-   - Get product (GET `/api/products/:id`)
-   - Create product (POST `/api/products`) - Auth required
-   - Update product (PUT `/api/products/:id`) - Auth required
-   - Delete product (DELETE `/api/products/:id`) - Auth required
+> Tip: keep service-specific `.env` files inside each folder; the root `.env` powers docker-compose only.
 
-3. **Order Management**
-   - Create order (POST `/api/orders`) - Auth required
-   - Get order (GET `/api/orders/:id`) - Auth required
-   - Get user orders (GET `/api/orders`) - Auth required
-   - Update status (PUT `/api/orders/:id/status`) - Admin only
+## 4. Everyday API Workflows
 
-4. **Notification Service**
-   - Send notification (POST `/api/notifications/send`) - Auth required
-   - Get notifications (GET `/api/notifications/:userId`) - Auth required
-   - Mark as read (PATCH `/api/notifications/:id/read`) - Auth required
-
-### ⚠️ Partially Implemented
-
-1. **Testing** - Basic structure exists, needs implementation
-2. **Search/Filtering** - Only basic listing available
-3. **Error Handling** - Partially implemented across services
-
-### ❌ Not Implemented
-
-1. **Shopping Cart Service** - Critical missing feature
-2. **Payment Service** - Critical missing feature
-3. **Product Reviews & Ratings**
-4. **Password Reset/Email Verification**
-5. **Advanced Search (Elasticsearch)**
-6. **CI/CD Pipeline**
-7. **Kubernetes Deployment**
-8. **Monitoring (Prometheus/Grafana)**
-9. **API Documentation (Swagger)**
-
-## Common Tasks
-
-### Register a New User
+Export a token once per session:
 
 ```bash
+AUTH_TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"john@example.com","password":"securepass123"}' | jq -r '.token')
+```
+
+### 4.1 User auth
+
+```bash
+# Register
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "email": "john@example.com",
-    "password": "securepass123"
-  }'
+  -d '{"name":"Jane","email":"jane@example.com","password":"StrongPass1!"}'
+
+# Fetch profile
+curl -H "Authorization: Bearer $AUTH_TOKEN" http://localhost:3000/api/users/me
 ```
 
-### Login
+### 4.2 Product CRUD
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "john@example.com",
-    "password": "securepass123"
-  }'
-```
-
-### Create a Product (Admin)
-
-```bash
+# Create product (admin token required)
 curl -X POST http://localhost:3000/api/products \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "name": "Gaming Laptop",
-    "description": "High-performance gaming laptop with RTX 4080",
-    "price": 1999.99,
-    "category": "electronics",
-    "stock": 15,
-    "imageUrl": "https://example.com/laptop.jpg"
-  }'
+  -d '{"name":"Laptop","description":"RTX 4080","price":1999.99,"stock":10,"category":"electronics"}'
+
+# List with pagination & sorting
+curl "http://localhost:3000/api/products?page=1&limit=20&sortBy=price&sortOrder=asc"
 ```
 
-### Create an Order
+### 4.3 Cart flows
+
+```bash
+# Add to cart
+curl -X POST http://localhost:3000/api/cart/items \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"productId":"<PRODUCT_ID>","quantity":2,"price":999.99,"name":"Laptop"}'
+
+# Update quantity
+curl -X PUT http://localhost:3000/api/cart/items/<PRODUCT_ID> \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"quantity":3}'
+
+# Retrieve cart
+curl -H "Authorization: Bearer $AUTH_TOKEN" http://localhost:3000/api/cart
+```
+
+### 4.4 Orders
 
 ```bash
 curl -X POST http://localhost:3000/api/orders \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "products": [
-      {
-        "product": "PRODUCT_ID_HERE",
-        "quantity": 2
-      }
-    ],
-    "totalPrice": 3999.98
-  }'
+        "items":[{"productId":"<PRODUCT_ID>","quantity":2,"price":999.99,"name":"Laptop"}],
+        "totalPrice":1999.98,
+        "shippingAddress":{
+          "fullName":"Jane Doe",
+          "phoneNumber":"+15555555555",
+          "street":"1 Market St",
+          "city":"SF",
+          "state":"CA",
+          "zipCode":"94103",
+          "country":"USA"
+        },
+        "paymentMethod":"stripe"
+      }'
 ```
 
-### Send a Notification
+### 4.5 Payments
+
+```bash
+# Stripe payment intent
+curl -X POST http://localhost:5005/api/payments/intent \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"orderId":"<ORDER_ID>","amount":199998,"currency":"usd"}'
+
+# PayPal order create
+curl -X POST http://localhost:5005/api/paypal/create \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"orderId":"<ORDER_ID>","amount":1999.98,"currency":"USD"}'
+
+# M-Pesa STK push
+curl -X POST http://localhost:5005/api/mpesa/initiate \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"orderId":"<ORDER_ID>","amount":1999.98,"phoneNumber":"254712345678"}'
+```
+
+### 4.6 Notifications
 
 ```bash
 curl -X POST http://localhost:3000/api/notifications/send \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "type": "email",
-    "contact": "user@example.com",
-    "message": "Your order has been confirmed!"
-  }'
+  -d '{"type":"email","contact":"user@example.com","message":"Order shipped"}'
 ```
 
-## Environment Variables Reference
+## 5. Testing & Quality Gates
 
-### Required Variables
+| Scope | Command |
+| --- | --- |
+| API Gateway middleware tests | `cd api-gateway && npm test` |
+| User/Product/Order services | `cd <service> && npm test` |
+| Cart service coverage | `cd cart-service && npm run test -- --coverage` |
+| Payment service suites (Stripe/PayPal/M-Pesa) | `cd payment-service && npm test` |
+| Notification worker tests | `cd notification-service && npm test` |
+| Linting (where configured) | `cd <service> && npm run lint` |
 
-```env
-# Critical - Must be set
-JWT_SECRET=your_secure_secret_here
-MONGO_URI=mongodb://mongodb:27017/shopSphere
+> Goal: raise coverage ≥80% and add integration/E2E runners (currently TODO).
 
-# For Notifications (if using Brevo)
-BREVO_API_KEY=your_brevo_api_key
+## 6. Troubleshooting Quick Hits
+
+| Symptom | Checks |
+| --- | --- |
+| Service 404/connection refused | `curl http://localhost:<port>/health`; verify dev server running |
+| JWT rejected | Ensure `JWT_SECRET` matches across services and header uses `Authorization: Bearer <token>` |
+| Cart rejects item | Confirm product exists and has stock via `GET /api/products/:id` |
+| Payment webhooks failing | Inspect `payment-service` logs, verify `STRIPE_WEBHOOK_SECRET` + raw body middleware |
+| Notification missing | Check Redis (`docker exec shopsphere-redis redis-cli monitor`) and worker logs |
+| Mongo errors | Confirm `MONGO_URI` matches docker-compose credentials and Mongo container is healthy |
+
+Handy commands:
+
+```bash
+docker compose ps
+docker compose logs -f <service>
+docker logs <container> --tail 200
+docker exec -it shopsphere-mongo mongosh
+docker exec -it shopsphere-redis redis-cli PING
 ```
 
-### Optional Variables
+## 7. Operations & Deployment
 
-```env
-# Service Configuration
-NODE_ENV=development
-API_GATEWAY_PORT=3000
-USER_SERVICE_PORT=5001
-PRODUCT_SERVICE_PORT=5002
-ORDER_SERVICE_PORT=5003
-NOTIFICATION_SERVICE_PORT=5004
+- Build & push images: `docker compose build && docker compose push`
+- Restart single service: `docker compose restart cart-service`
+- Tail production-like logs locally: `docker compose logs -f payment-service`
+- Reset local data:
 
-# Redis
-REDIS_URL=redis://redis:6379
-REDIS_HOST=redis
-REDIS_PORT=6379
+  ```bash
+  docker exec shopsphere-mongo mongosh --eval 'db.dropDatabase()'
+  docker exec shopsphere-redis redis-cli FLUSHALL
+  ```
 
-# Security
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
-RATE_LIMIT_WINDOW_MS=60000
-RATE_LIMIT_MAX_REQUESTS=100
-```
+- Health endpoints to monitor:
+  - `GET http://localhost:3000/health` (gateway)
+  - `GET http://localhost:5005/health` (payment)
+  - `GET http://localhost:5006/health` (cart)
 
-## Troubleshooting
+## 8. Active Hardening Focus (Q1 2026)
 
-### Service Won't Start
-
-1. Check if MongoDB is running: `docker ps | grep mongo`
-2. Check if Redis is running: `docker ps | grep redis`
-3. Check logs: `docker logs shopsphere-[service-name]`
-4. Verify environment variables are set
-
-### Can't Connect to Services
-
-1. Verify all containers are running: `docker-compose ps`
-2. Check network connectivity: `docker network inspect shopsphere-network`
-3. Verify ports are not already in use: `netstat -an | grep [PORT]`
-
-### Notification Service Issues
-
-1. Verify Redis is running and accessible
-2. Check BREVO_API_KEY is set correctly
-3. Check worker logs: `docker logs shopsphere-notification-service`
-
-### Database Connection Issues
-
-1. Verify MONGO_URI is correct
-2. Check MongoDB container is running
-3. Test connection: `docker exec -it shopsphere-mongo mongosh`
-
-## Next Steps for Development
-
-### Priority 1: Critical Features
-
-1. Implement Shopping Cart Service
-   - Create new microservice
-   - Add cart model
-   - Implement cart CRUD operations
-   - Integrate with order service
-
-2. Implement Payment Service
-   - Create payment microservice
-   - Integrate Stripe/PayPal
-   - Add transaction tracking
-   - Link with order service
-
-### Priority 2: Enhance Existing Features
-
-1. Add Product Search & Filtering
-   - Add query parameters to product endpoints
-   - Implement pagination
-   - Add category filtering
-   - Add price range filtering
-
-2. Complete Testing
-   - Write unit tests for all services
-   - Add integration tests
-   - Implement E2E tests
-   - Add CI/CD with automated testing
-
-### Priority 3: Production Readiness
-
-1. Add Monitoring
-   - Implement Prometheus metrics
-   - Create Grafana dashboards
-   - Add logging aggregation
-
-2. Security Enhancements
-   - Add API key management
-   - Implement request signing
-   - Add security scanning
-
-3. Documentation
-   - Add Swagger/OpenAPI specs
-   - Create API versioning
-   - Add deployment guides
-
-## Additional Resources
-
-- **Full Documentation:** See `/docs` folder
-- **Architecture:** See `ARCHITECTURE.md`
-- **API Reference:** See `API.md`
-- **Setup Guide:** See `SETUP.md`
-- **Implementation Status:** See `IMPLEMENTATION_STATUS.md`
-- **Contributing:** See `CONTRIBUTING.md`
-
-## Support
-
-For issues and questions:
-
-1. Check the documentation in `/docs`
-2. Review `IMPLEMENTATION_STATUS.md` for known issues
-3. Check existing GitHub issues
-4. Create a new issue with detailed information
+1. **Cart Service** – Guest cart merge flow, TTL cleanup worker, tracing/observability.
+2. **Payment Service** – Reconciliation + settlement reporting, webhook alerting, rate-limit tuning.
+3. **Order Service** – Enforce stock validation + transactional writes with Product Service.
+4. **Testing & CI** – Build integration/E2E suites and GitHub Actions pipeline.
+5. **Observability** – Prometheus metrics + Grafana dashboards for gateway, cart, payment latency.
 
 ---
 
-**Last Updated:** December 17, 2024  
-**Version:** 1.0.0  
-**Status:** Development - Not Production Ready
+**Last Updated:** January 4, 2026  
+**Maintainer:** ShopSphere Core Team
