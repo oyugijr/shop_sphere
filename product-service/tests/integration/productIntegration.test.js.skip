@@ -1,0 +1,370 @@
+/**
+ * Integration tests for Product Service
+ * Tests with real MongoDB database (using mongodb-memory-server)
+ */
+const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
+const Product = require('../../src/models/Product.model');
+const productRepository = require('../../src/repositories/productRepository');
+
+let mongoServer;
+
+describe('Product Integration Tests', () => {
+  // Setup: Start MongoDB Memory Server
+  beforeAll(async () => {
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
+  });
+
+  // Cleanup: Clear database after each test
+  afterEach(async () => {
+    await Product.deleteMany({});
+  });
+
+  // Teardown: Stop MongoDB Memory Server
+  afterAll(async () => {
+    await mongoose.disconnect();
+    await mongoServer.stop();
+  });
+
+  describe('Product Model', () => {
+    it('should create a product with required fields', async () => {
+      const productData = {
+        name: 'Test Laptop',
+        description: 'A great laptop for testing',
+        price: 999.99,
+        stock: 10,
+        category: 'electronics'
+      };
+
+      const product = await Product.create(productData);
+
+      expect(product._id).toBeDefined();
+      expect(product.name).toBe(productData.name);
+      expect(product.description).toBe(productData.description);
+      expect(product.price).toBe(productData.price);
+      expect(product.stock).toBe(productData.stock);
+      expect(product.category).toBe(productData.category);
+      expect(product.isActive).toBe(true);
+      expect(product.isDeleted).toBe(false);
+      expect(product.sku).toBeDefined(); // Auto-generated
+    });
+
+    it('should validate required fields', async () => {
+      const invalidProduct = new Product({
+        name: 'Test Product'
+        // Missing required fields
+      });
+
+      await expect(invalidProduct.save()).rejects.toThrow();
+    });
+
+    it('should enforce minimum length for name', async () => {
+      const product = new Product({
+        name: 'A', // Too short
+        description: 'Valid description here',
+        price: 100,
+        stock: 5,
+        category: 'test'
+      });
+
+      await expect(product.save()).rejects.toThrow();
+    });
+
+    it('should enforce minimum length for description', async () => {
+      const product = new Product({
+        name: 'Valid Name',
+        description: 'Short', // Too short
+        price: 100,
+        stock: 5,
+        category: 'test'
+      });
+
+      await expect(product.save()).rejects.toThrow();
+    });
+
+    it('should not allow negative price', async () => {
+      const product = new Product({
+        name: 'Test Product',
+        description: 'Valid description',
+        price: -10, // Negative price
+        stock: 5,
+        category: 'test'
+      });
+
+      await expect(product.save()).rejects.toThrow();
+    });
+
+    it('should not allow negative stock', async () => {
+      const product = new Product({
+        name: 'Test Product',
+        description: 'Valid description',
+        price: 100,
+        stock: -5, // Negative stock
+        category: 'test'
+      });
+
+      await expect(product.save()).rejects.toThrow();
+    });
+
+    it('should convert category to lowercase', async () => {
+      const product = await Product.create({
+        name: 'Test Product',
+        description: 'Valid description',
+        price: 100,
+        stock: 5,
+        category: 'ELECTRONICS' // Uppercase
+      });
+
+      expect(product.category).toBe('electronics');
+    });
+
+    it('should have isAvailable virtual based on stock and status', async () => {
+      const product = await Product.create({
+        name: 'Test Product',
+        description: 'Valid description',
+        price: 100,
+        stock: 5,
+        category: 'test'
+      });
+
+      expect(product.isAvailable).toBe(true);
+
+      // Make product inactive
+      product.isActive = false;
+      await product.save();
+      expect(product.isAvailable).toBe(false);
+    });
+
+    it('should increase stock correctly', async () => {
+      const product = await Product.create({
+        name: 'Test Product',
+        description: 'Valid description',
+        price: 100,
+        stock: 10,
+        category: 'test'
+      });
+
+      await product.increaseStock(5);
+      expect(product.stock).toBe(15);
+    });
+
+    it('should decrease stock correctly', async () => {
+      const product = await Product.create({
+        name: 'Test Product',
+        description: 'Valid description',
+        price: 100,
+        stock: 10,
+        category: 'test'
+      });
+
+      await product.decreaseStock(5);
+      expect(product.stock).toBe(5);
+    });
+
+    it('should throw error when decreasing stock below zero', async () => {
+      const product = await Product.create({
+        name: 'Test Product',
+        description: 'Valid description',
+        price: 100,
+        stock: 5,
+        category: 'test'
+      });
+
+      await expect(product.decreaseStock(10)).rejects.toThrow('Insufficient stock');
+    });
+  });
+
+  describe('Product Repository', () => {
+    let testProducts;
+
+    beforeEach(async () => {
+      // Create test products
+      testProducts = await Product.insertMany([
+        {
+          name: 'Laptop Pro',
+          description: 'High-end laptop for professionals',
+          price: 1500,
+          stock: 5,
+          category: 'electronics',
+          isActive: true
+        },
+        {
+          name: 'Wireless Mouse',
+          description: 'Ergonomic wireless mouse',
+          price: 25,
+          stock: 20,
+          category: 'electronics',
+          isActive: true
+        },
+        {
+          name: 'Office Chair',
+          description: 'Comfortable office chair',
+          price: 250,
+          stock: 10,
+          category: 'furniture',
+          isActive: true
+        },
+        {
+          name: 'Deleted Product',
+          description: 'This product is deleted',
+          price: 100,
+          stock: 0,
+          category: 'test',
+          isActive: false,
+          isDeleted: true
+        }
+      ]);
+    });
+
+    it('should find all active products with pagination', async () => {
+      const result = await productRepository.findAll({}, { page: 1, limit: 10 });
+
+      expect(result.products.length).toBe(3); // Excluding deleted product
+      expect(result.pagination.total).toBe(3);
+      expect(result.pagination.page).toBe(1);
+    });
+
+    it('should filter products by category', async () => {
+      const result = await productRepository.findByCategory('electronics', { page: 1, limit: 10 });
+
+      expect(result.products.length).toBe(2);
+      expect(result.products.every(p => p.category === 'electronics')).toBe(true);
+    });
+
+    it('should find product by ID', async () => {
+      const product = await productRepository.findById(testProducts[0]._id);
+
+      expect(product).toBeDefined();
+      expect(product.name).toBe('Laptop Pro');
+    });
+
+    it('should not find deleted product by ID', async () => {
+      const deletedProduct = testProducts[3];
+      const product = await productRepository.findById(deletedProduct._id);
+
+      expect(product).toBeNull();
+    });
+
+    it('should create a new product', async () => {
+      const newProduct = await productRepository.create({
+        name: 'New Keyboard',
+        description: 'Mechanical keyboard',
+        price: 150,
+        stock: 15,
+        category: 'electronics'
+      });
+
+      expect(newProduct._id).toBeDefined();
+      expect(newProduct.name).toBe('New Keyboard');
+    });
+
+    it('should update a product', async () => {
+      const updated = await productRepository.update(testProducts[0]._id, {
+        price: 1400,
+        stock: 3
+      });
+
+      expect(updated).toBeDefined();
+      expect(updated.price).toBe(1400);
+      expect(updated.stock).toBe(3);
+    });
+
+    it('should soft delete a product', async () => {
+      const deleted = await productRepository.remove(testProducts[0]._id);
+
+      expect(deleted).toBeDefined();
+      expect(deleted.isDeleted).toBe(true);
+      expect(deleted.isActive).toBe(false);
+
+      // Verify it's not found in normal queries
+      const found = await productRepository.findById(testProducts[0]._id);
+      expect(found).toBeNull();
+    });
+
+    it('should check stock availability', async () => {
+      const check = await productRepository.checkStock(testProducts[0]._id, 3);
+
+      expect(check.available).toBe(true);
+      expect(check.currentStock).toBe(5);
+    });
+
+    it('should report insufficient stock', async () => {
+      const check = await productRepository.checkStock(testProducts[0]._id, 10);
+
+      expect(check.available).toBe(false);
+      expect(check.reason).toBe('Insufficient stock');
+    });
+
+    it('should get product statistics', async () => {
+      const stats = await productRepository.getStats();
+
+      expect(stats.totalProducts).toBe(3); // Excluding deleted
+      expect(stats.activeProducts).toBe(3);
+      expect(stats.totalStock).toBeGreaterThan(0);
+      expect(stats.averagePrice).toBeGreaterThan(0);
+    });
+
+    it('should get category statistics', async () => {
+      const stats = await productRepository.getCategoryStats();
+
+      expect(stats.length).toBeGreaterThan(0);
+      const electronicsStats = stats.find(s => s._id === 'electronics');
+      expect(electronicsStats).toBeDefined();
+      expect(electronicsStats.count).toBe(2);
+    });
+
+    it('should support pagination', async () => {
+      const page1 = await productRepository.findAll({}, { page: 1, limit: 2 });
+      const page2 = await productRepository.findAll({}, { page: 2, limit: 2 });
+
+      expect(page1.products.length).toBe(2);
+      expect(page2.products.length).toBe(1);
+      expect(page1.pagination.hasNext).toBe(true);
+      expect(page2.pagination.hasNext).toBe(false);
+    });
+
+    it('should support sorting', async () => {
+      const ascResult = await productRepository.findAll({}, { 
+        sortBy: 'price', 
+        sortOrder: 'asc',
+        page: 1,
+        limit: 10 
+      });
+
+      expect(ascResult.products[0].price).toBeLessThan(ascResult.products[1].price);
+
+      const descResult = await productRepository.findAll({}, { 
+        sortBy: 'price', 
+        sortOrder: 'desc',
+        page: 1,
+        limit: 10 
+      });
+
+      expect(descResult.products[0].price).toBeGreaterThan(descResult.products[1].price);
+    });
+
+    it('should bulk create products', async () => {
+      const productsData = [
+        {
+          name: 'Product 1',
+          description: 'Description for product 1',
+          price: 100,
+          stock: 10,
+          category: 'test'
+        },
+        {
+          name: 'Product 2',
+          description: 'Description for product 2',
+          price: 200,
+          stock: 20,
+          category: 'test'
+        }
+      ];
+
+      const result = await productRepository.bulkCreate(productsData);
+      expect(result.length).toBe(2);
+    });
+  });
+});
