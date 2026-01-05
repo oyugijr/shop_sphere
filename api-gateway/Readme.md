@@ -211,7 +211,7 @@ k6 run load-test.js
 
 ## Monitoring
 
-### Health Check
+### Health
 
 ```bash
 curl http://localhost:3000/health
