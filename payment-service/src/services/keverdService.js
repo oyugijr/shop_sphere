@@ -64,12 +64,13 @@ const assessFraudRisk = async (transactionData) => {
     const result = await Keverd.getVisitorData();
 
     // Parse the result
+    // Note: Keverd SDK returns 'reason' as an array, we store it in 'reasons'
     const fraudData = {
       enabled: true,
       riskScore: result.risk_score || 0,
       score: result.score || 0,
       action: result.action || 'allow',
-      reasons: result.reason || [],
+      reasons: result.reason || [], // Keverd returns 'reason' as an array
       sessionId: result.session_id || null,
       requestId: result.requestId || null,
       checkedAt: new Date(),
