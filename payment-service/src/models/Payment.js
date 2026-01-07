@@ -101,6 +101,39 @@ const PaymentSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // Fraud detection fields
+    fraudDetection: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      riskScore: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: null,
+      },
+      action: {
+        type: String,
+        enum: ['allow', 'soft_challenge', 'hard_challenge', 'block', null],
+        default: null,
+      },
+      reasons: [{
+        type: String,
+      }],
+      sessionId: {
+        type: String,
+        default: null,
+      },
+      requestId: {
+        type: String,
+        default: null,
+      },
+      checkedAt: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,

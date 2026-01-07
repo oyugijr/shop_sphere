@@ -1,5 +1,6 @@
 const stripe = require('../config/stripe');
 const paymentRepository = require('../repositories/paymentRepository');
+const keverdService = require('./keverdService');
 
 /**
  * Create a payment intent with Stripe
@@ -17,6 +18,48 @@ const createPaymentIntent = async (orderId, amount, currency = 'usd', userId, me
       throw new Error('Invalid amount');
     }
 
+    // Perform fraud detection check
+    const fraudData = await keverdService.assessFraudRisk({
+      orderId,
+      userId,
+      amount: amount / 100, // Convert cents to dollars for display
+      currency,
+      metadata,
+    });
+
+    // Check if transaction should be blocked based on fraud score
+    if (fraudData.enabled && keverdService.shouldBlockTransaction(fraudData.riskScore)) {
+      console.log(`Transaction blocked due to high fraud risk. Order: ${orderId}, Risk Score: ${fraudData.riskScore}`);
+      
+      // Store the payment record with blocked status
+      const payment = await paymentRepository.create({
+        orderId,
+        userId,
+        stripePaymentIntentId: null,
+        amount: amount / 100,
+        currency: currency.toLowerCase(),
+        status: 'failed',
+        metadata,
+        fraudDetection: {
+          enabled: fraudData.enabled,
+          riskScore: fraudData.riskScore,
+          action: fraudData.action,
+          reasons: fraudData.reasons,
+          sessionId: fraudData.sessionId,
+          requestId: fraudData.requestId,
+          checkedAt: fraudData.checkedAt,
+        },
+        errorMessage: `Transaction blocked due to high fraud risk (score: ${fraudData.riskScore})`,
+      });
+
+      throw new Error(`Transaction blocked due to high fraud risk. Risk score: ${fraudData.riskScore}`);
+    }
+
+    // Log challenge if risk is medium
+    if (fraudData.enabled && keverdService.shouldChallengeTransaction(fraudData.riskScore)) {
+      console.log(`Transaction flagged for review. Order: ${orderId}, Risk Score: ${fraudData.riskScore}`);
+    }
+
     // Create payment intent with Stripe
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
@@ -31,7 +74,7 @@ const createPaymentIntent = async (orderId, amount, currency = 'usd', userId, me
       },
     });
 
-    // Store payment record in database
+    // Store payment record in database with fraud detection data
     const payment = await paymentRepository.create({
       orderId,
       userId,
@@ -40,6 +83,15 @@ const createPaymentIntent = async (orderId, amount, currency = 'usd', userId, me
       currency: currency.toLowerCase(),
       status: 'pending',
       metadata,
+      fraudDetection: {
+        enabled: fraudData.enabled,
+        riskScore: fraudData.riskScore,
+        action: fraudData.action,
+        reasons: fraudData.reasons,
+        sessionId: fraudData.sessionId,
+        requestId: fraudData.requestId,
+        checkedAt: fraudData.checkedAt,
+      },
     });
 
     return {
@@ -47,6 +99,7 @@ const createPaymentIntent = async (orderId, amount, currency = 'usd', userId, me
       client_secret: paymentIntent.client_secret,
       status: paymentIntent.status,
       payment,
+      fraudCheck: keverdService.formatFraudDataForResponse(fraudData),
     };
   } catch (error) {
     console.error('Error creating payment intent:', error);
