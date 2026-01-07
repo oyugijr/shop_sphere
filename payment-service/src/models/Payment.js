@@ -101,6 +101,39 @@ const PaymentSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // Fraud detection fields
+    fraudDetection: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      riskScore: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: null,
+      },
+      action: {
+        type: String,
+        enum: ['allow', 'soft_challenge', 'hard_challenge', 'block', null],
+        default: null,
+      },
+      reasons: [{
+        type: String,
+      }],
+      sessionId: {
+        type: String,
+        default: null,
+      },
+      requestId: {
+        type: String,
+        default: null,
+      },
+      checkedAt: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,
@@ -113,7 +146,7 @@ PaymentSchema.index({ userId: 1, createdAt: -1 });
 PaymentSchema.index({ provider: 1, status: 1 });
 
 // Validation: require provider-specific fields
-PaymentSchema.pre('save', function(next) {
+PaymentSchema.pre('save', function (next) {
   if (this.provider === 'stripe' && !this.stripePaymentIntentId) {
     return next(new Error('stripePaymentIntentId is required for Stripe payments'));
   }

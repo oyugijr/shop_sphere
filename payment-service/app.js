@@ -7,12 +7,16 @@ const mpesaRoutes = require('./src/routes/mpesaRoutes');
 const paypalRoutes = require('./src/routes/paypalRoutes');
 const errorHandler = require('./src/middlewares/errorHandler');
 const verifyWebhookSignature = require('./src/middlewares/webhookMiddleware');
+const keverdService = require('./src/services/keverdService');
 
 // Load environment variables
 dotenv.config();
 
 // Connect to MongoDB
 connectDB();
+
+// initialize Keverd fraud detection
+keverdService.initKeverd();
 
 const app = express();
 
@@ -49,6 +53,10 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     providers: ['stripe', 'mpesa', 'paypal'],
+    fraudDetection: {
+      enabled: keverdService.isEnabled(),
+      provider: 'keverd',
+    },
   });
 });
 
@@ -74,6 +82,7 @@ const server = app.listen(PORT, () => {
   console.log(`💳 Payment Service running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`💰 Payment Providers: Stripe, M-Pesa, PayPal`);
+  console.log(`🛡️  Fraud Detection: ${keverdService.isEnabled() ? 'Enabled (Keverd)' : 'Disabled'}`);
 });
 
 // Graceful shutdown

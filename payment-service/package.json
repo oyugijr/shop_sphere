@@ -19,6 +19,7 @@
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {
+    "@keverdjs/fraud-sdk": "^1.0.0",
     "@paypal/paypal-server-sdk": "^2.1.0",
     "axios": "^1.12.0",
     "cors": "^2.8.5",
