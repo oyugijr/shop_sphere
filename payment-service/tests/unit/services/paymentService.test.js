@@ -19,7 +19,16 @@ jest.mock('../../../src/config/stripe', () => ({
   },
 }));
 
+// Mock Keverd service
+jest.mock('../../../src/services/keverdService', () => ({
+  assessFraudRisk: jest.fn(),
+  shouldBlockTransaction: jest.fn(),
+  shouldChallengeTransaction: jest.fn(),
+  formatFraudDataForResponse: jest.fn(),
+}));
+
 const mockStripe = require('../../../src/config/stripe');
+const keverdService = require('../../../src/services/keverdService');
 
 describe('Payment Service', () => {
 
@@ -33,6 +42,20 @@ describe('Payment Service', () => {
       const userId = '607f1f77bcf86cd799439012';
       const amount = 9999; // $99.99 in cents
       const currency = 'usd';
+
+      // Mock fraud detection as disabled for this test
+      keverdService.assessFraudRisk.mockResolvedValue({
+        enabled: false,
+        riskScore: 0,
+        action: 'allow',
+        reasons: ['fraud_detection_disabled'],
+        sessionId: null,
+        requestId: null,
+      });
+      keverdService.shouldBlockTransaction.mockReturnValue(false);
+      keverdService.formatFraudDataForResponse.mockReturnValue({
+        fraudCheckEnabled: false,
+      });
 
       const mockIntent = {
         id: 'pi_123456',
@@ -64,19 +87,34 @@ describe('Payment Service', () => {
         metadata: { orderId, userId },
         automatic_payment_methods: { enabled: true }
       });
-      expect(paymentRepository.create).toHaveBeenCalledWith({
-        orderId,
-        userId,
-        stripePaymentIntentId: 'pi_123456',
-        amount: 99.99,
-        currency,
-        status: 'pending',
-        metadata: {}
-      });
+
+      expect(paymentRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderId,
+          userId,
+          stripePaymentIntentId: 'pi_123456',
+          amount: 99.99,
+          currency,
+          status: 'pending',
+          metadata: {},
+          fraudDetection: expect.any(Object),
+        })
+      );
       expect(result.client_secret).toBe('pi_123456_secret');
+      expect(result.fraudCheck).toBeDefined();
     });
 
     it('should handle stripe errors', async () => {
+      // Mock fraud detection
+      keverdService.assessFraudRisk.mockResolvedValue({
+        enabled: false,
+        riskScore: 0,
+        action: 'allow',
+        reasons: ['fraud_detection_disabled'],
+      });
+      
+      keverdService.shouldBlockTransaction.mockReturnValue(false);
+
       mockStripe.paymentIntents.create.mockRejectedValue(new Error('Stripe API error'));
 
       await expect(
