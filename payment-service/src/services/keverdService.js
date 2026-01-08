@@ -1,4 +1,4 @@
-const {keverd} = require('@keverd/fraud-sdk');
+const {Keverd} = require('@keverdjs/fraud-sdk');
 
 /**
  * Initialize Keverd SDK
