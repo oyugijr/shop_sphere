@@ -27,6 +27,7 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 - **JWT Authentication**: Secure user authentication and authorization
 - **Role-Based Access Control**: Admin and user roles with appropriate permissions
 - **Payment Processing**: Complete Stripe integration for secure payments
+- **Fraud Detection**: Real-time fraud detection with Keverd integration
 - **Health Checks**: Monitor service availability and health
 - **Rate Limiting**: Protection against API abuse at multiple levels
 - **Docker Support**: Easy deployment with Docker Compose
@@ -42,7 +43,7 @@ A modern, scalable microservices-based e-commerce platform built with Node.js, E
 | **Product Service** | 5002 | Product catalog and inventory management |
 | **Order Service** | 5003 | Order creation, tracking, and management |
 | **Notification Service** | 5004 | Email and push notifications with queue-based processing |
-| **Payment Service** | 5005 | Payment processing with Stripe integration |
+| **Payment Service** | 5005 | Payment processing with Stripe integration and Keverd fraud detection |
 | **Cart Service** | 5006 | Shopping cart management with real-time stock validation |
 | **MongoDB** | 27017 | Database for all services |
 | **Redis** | 6379 | Message queue and caching for notification service |
@@ -126,6 +127,13 @@ docker-compose down -v
 - **[API Documentation](./docs/API.md)** - Complete API reference
 - **[Architecture Guide](./docs/ARCHITECTURE.md)** - System design and data flow
 
+### Fraud Detection & Security
+
+- **[Keverd Integration Review](./KEVERD_INTEGRATION_REVIEW.md)** - Complete fraud detection status and recommendations
+- **[Keverd Testing Guide](./KEVERD_TESTING_GUIDE.md)** - Step-by-step testing instructions
+- **[Fraud Detection Quickstart](./payment-service/FRAUD_DETECTION_QUICKSTART.md)** - Quick setup guide
+- **[Fraud Detection Technical Docs](./payment-service/FRAUD_DETECTION.md)** - Technical implementation details
+
 ### Project Status & Planning
 
 - **[Implementation Status](./IMPLEMENTATION_STATUS.md)** - What's implemented, partially done, and missing
@@ -141,7 +149,11 @@ docker-compose down -v
 
 - JWT-based authentication
 - Password hashing with bcryptjs
+- **Keverd fraud detection** - Real-time transaction risk assessment
 - Rate limiting (100 requests/minute)
+- CORS configuration
+- Environment-based secrets management
+- Role-based access control
 - CORS configuration
 - Environment-based secrets management
 - Role-based access control
