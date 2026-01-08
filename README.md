@@ -154,9 +154,6 @@ docker-compose down -v
 - CORS configuration
 - Environment-based secrets management
 - Role-based access control
-- CORS configuration
-- Environment-based secrets management
-- Role-based access control
 
 ## 🧪 Testing
 
