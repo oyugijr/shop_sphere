@@ -90,7 +90,7 @@ describe('Product Validation Utils', () => {
 
       const result = validateProduct(invalidProduct);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Valid price is required (must be >= 0)');
+      expect(result.errors).toContain('Product price cannot be negative');
     });
 
     it('should return errors for missing category', () => {
@@ -104,7 +104,7 @@ describe('Product Validation Utils', () => {
 
       const result = validateProduct(invalidProduct);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Product category is required');
+      expect(result.errors).toContain('Product category is required and must be a string');
     });
 
     it('should return errors for invalid stock', () => {
@@ -118,7 +118,7 @@ describe('Product Validation Utils', () => {
 
       const result = validateProduct(invalidProduct);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Valid stock quantity is required (must be >= 0)');
+      expect(result.errors).toContain('Stock quantity cannot be negative');
     });
 
     it('should return multiple errors for multiple invalid fields', () => {
@@ -184,7 +184,7 @@ describe('Product Validation Utils', () => {
 
       const result = validateProductUpdate(invalidUpdate);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Price must be >= 0');
+      expect(result.errors).toContain('Product price cannot be negative');
     });
 
     it('should return errors for invalid stock', () => {
@@ -194,7 +194,7 @@ describe('Product Validation Utils', () => {
 
       const result = validateProductUpdate(invalidUpdate);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Stock quantity must be >= 0');
+      expect(result.errors).toContain('Stock quantity cannot be negative');
     });
 
     it('should allow price of 0', () => {

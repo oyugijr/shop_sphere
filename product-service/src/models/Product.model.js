@@ -40,6 +40,7 @@ const ProductSchema = new mongoose.Schema(
     sku: {
       type: String,
       sparse: true,
+      unique: true,
       trim: true,
       uppercase: true
     },
@@ -89,7 +90,6 @@ const ProductSchema = new mongoose.Schema(
 ProductSchema.index({ name: 'text', description: 'text', tags: 'text' });
 ProductSchema.index({ category: 1, price: 1 });
 ProductSchema.index({ isActive: 1, isDeleted: 1 });
-ProductSchema.index({ sku: 1 }, { unique: true, sparse: true });
 ProductSchema.index({ createdAt: -1 });
 
 // Virtual for availability

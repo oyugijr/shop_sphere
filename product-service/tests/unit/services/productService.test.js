@@ -1,7 +1,10 @@
 const productService = require('../../../src/services/productService');
 const productRepository = require('../../../src/repositories/productRepository');
+const { NotFoundError, ValidationError } = require('../../../src/utils/errorHandler');
 
 jest.mock('../../../src/repositories/productRepository');
+
+const VALID_ID = '507f1f77bcf86cd799439011';
 
 describe('Product Service', () => {
   beforeEach(() => {
@@ -39,27 +42,29 @@ describe('Product Service', () => {
 
   describe('getProductById', () => {
     it('should return a product by id', async () => {
-      const mockProduct = { _id: '1', name: 'Laptop', price: 999.99, stock: 10 };
+      const mockProduct = { _id: VALID_ID, name: 'Laptop', price: 999.99, stock: 10 };
       productRepository.findById.mockResolvedValue(mockProduct);
 
-      const result = await productService.getProductById('1');
+      const result = await productService.getProductById(VALID_ID);
 
-      expect(productRepository.findById).toHaveBeenCalledWith('1');
+      expect(productRepository.findById).toHaveBeenCalledWith(VALID_ID);
       expect(result).toEqual(mockProduct);
     });
 
-    it('should return null if product not found', async () => {
+    it('should throw NotFoundError if product not found', async () => {
       productRepository.findById.mockResolvedValue(null);
 
-      const result = await productService.getProductById('nonexistent');
-
-      expect(result).toBeNull();
+      await expect(productService.getProductById(VALID_ID)).rejects.toThrow(NotFoundError);
     });
 
     it('should propagate repository errors', async () => {
       productRepository.findById.mockRejectedValue(new Error('Database error'));
 
-      await expect(productService.getProductById('1')).rejects.toThrow('Database error');
+      await expect(productService.getProductById(VALID_ID)).rejects.toThrow('Database error');
+    });
+
+    it('should throw ValidationError for invalid id format', async () => {
+      await expect(productService.getProductById('invalid-id')).rejects.toThrow(ValidationError);
     });
   });
 
@@ -92,53 +97,49 @@ describe('Product Service', () => {
   describe('updateProduct', () => {
     it('should update a product', async () => {
       const updateData = { price: 899.99, stock: 15 };
-      const mockUpdatedProduct = { _id: '1', name: 'Laptop', ...updateData };
+      const mockUpdatedProduct = { _id: VALID_ID, name: 'Laptop', ...updateData };
       productRepository.update.mockResolvedValue(mockUpdatedProduct);
 
-      const result = await productService.updateProduct('1', updateData);
+      const result = await productService.updateProduct(VALID_ID, updateData);
 
-      expect(productRepository.update).toHaveBeenCalledWith('1', updateData);
+      expect(productRepository.update).toHaveBeenCalledWith(VALID_ID, updateData);
       expect(result).toEqual(mockUpdatedProduct);
     });
 
-    it('should return null if product not found', async () => {
+    it('should throw NotFoundError if product not found', async () => {
       productRepository.update.mockResolvedValue(null);
 
-      const result = await productService.updateProduct('nonexistent', { price: 100 });
-
-      expect(result).toBeNull();
+      await expect(productService.updateProduct(VALID_ID, { price: 100 })).rejects.toThrow(NotFoundError);
     });
 
     it('should propagate repository errors', async () => {
       productRepository.update.mockRejectedValue(new Error('Database error'));
 
-      await expect(productService.updateProduct('1', { price: 100 })).rejects.toThrow('Database error');
+      await expect(productService.updateProduct(VALID_ID, { price: 100 })).rejects.toThrow('Database error');
     });
   });
 
   describe('deleteProduct', () => {
     it('should delete a product', async () => {
-      const mockDeletedProduct = { _id: '1', name: 'Laptop', price: 999.99 };
+      const mockDeletedProduct = { _id: VALID_ID, name: 'Laptop', price: 999.99 };
       productRepository.remove.mockResolvedValue(mockDeletedProduct);
 
-      const result = await productService.deleteProduct('1');
+      const result = await productService.deleteProduct(VALID_ID);
 
-      expect(productRepository.remove).toHaveBeenCalledWith('1');
+      expect(productRepository.remove).toHaveBeenCalledWith(VALID_ID);
       expect(result).toEqual(mockDeletedProduct);
     });
 
-    it('should return null if product not found', async () => {
+    it('should throw NotFoundError if product not found', async () => {
       productRepository.remove.mockResolvedValue(null);
 
-      const result = await productService.deleteProduct('nonexistent');
-
-      expect(result).toBeNull();
+      await expect(productService.deleteProduct(VALID_ID)).rejects.toThrow(NotFoundError);
     });
 
     it('should propagate repository errors', async () => {
       productRepository.remove.mockRejectedValue(new Error('Database error'));
 
-      await expect(productService.deleteProduct('1')).rejects.toThrow('Database error');
+      await expect(productService.deleteProduct(VALID_ID)).rejects.toThrow('Database error');
     });
   });
 });
