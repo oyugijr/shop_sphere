@@ -17,6 +17,8 @@ describe('Keverd Service', () => {
         jest.clearAllMocks();
         // Reset environment variables
         process.env = { ...originalEnv };
+        delete process.env.KEVERD_API_KEY;
+        keverdService.initKeverd(); // resets initialization flag
     });
 
     afterAll(() => {
@@ -80,6 +82,7 @@ describe('Keverd Service', () => {
             process.env.KEVERD_API_KEY = 'test-api-key';
 
             expect(keverdService.isEnabled()).toBe(true);
+            expect(Keverd.init).toHaveBeenCalled();
         });
 
         it('should return false when disabled', () => {
@@ -92,6 +95,17 @@ describe('Keverd Service', () => {
         it('should return false when API key is missing', () => {
             process.env.KEVERD_ENABLED = 'true';
             delete process.env.KEVERD_API_KEY;
+
+            expect(keverdService.isEnabled()).toBe(false);
+        });
+
+        it('should return false when initialization fails', () => {
+            process.env.KEVERD_ENABLED = 'true';
+            process.env.KEVERD_API_KEY = 'test-api-key';
+
+            Keverd.init.mockImplementationOnce(() => {
+                throw new Error('Init failed');
+            });
 
             expect(keverdService.isEnabled()).toBe(false);
         });
@@ -131,7 +145,10 @@ describe('Keverd Service', () => {
 
             Keverd.getVisitorData.mockResolvedValue(mockKeverdResponse);
 
-            const result = await keverdService.assessFraudRisk(mockTransactionData);
+            const result = await keverdService.assessFraudRisk(mockTransactionData, {
+                ip: '1.1.1.1',
+                userAgent: 'jest',
+            });
 
             expect(Keverd.getVisitorData).toHaveBeenCalled();
             expect(result.enabled).toBe(true);
@@ -140,6 +157,10 @@ describe('Keverd Service', () => {
             expect(result.reasons).toEqual(['low_risk']);
             expect(result.sessionId).toBe('session-123');
             expect(result.requestId).toBe('request-456');
+            expect(result.context).toEqual({
+                ip: '1.1.1.1',
+                userAgent: 'jest',
+            });
         });
 
         it('should handle high risk score', async () => {
@@ -171,12 +192,47 @@ describe('Keverd Service', () => {
 
             Keverd.getVisitorData.mockRejectedValue(new Error('API Error'));
 
-            const result = await keverdService.assessFraudRisk(mockTransactionData);
+            const result = await keverdService.assessFraudRisk(mockTransactionData, {
+                ip: '2.2.2.2',
+                extra: 'ignore-me',
+            });
 
-            expect(result.enabled).toBe(true);
+            expect(result.enabled).toBe(false);
             expect(result.action).toBe('allow');
             expect(result.reasons).toContain('fraud_check_error');
             expect(result.error).toBe('API Error');
+            expect(result.context).toEqual({ ip: '2.2.2.2' });
+        });
+
+        it('should sanitize context before returning it', async () => {
+            process.env.KEVERD_ENABLED = 'true';
+            process.env.KEVERD_API_KEY = 'test-api-key';
+
+            const mockKeverdResponse = {
+                risk_score: 10,
+                score: 0.1,
+                action: 'allow',
+                reason: ['minimal_risk'],
+            };
+
+            Keverd.getVisitorData.mockResolvedValue(mockKeverdResponse);
+
+            const result = await keverdService.assessFraudRisk(mockTransactionData, {
+                ip: '5.5.5.5',
+                method: 'POST',
+                sensitive: 'drop-me',
+            });
+
+            expect(result.context).toEqual({
+                ip: '5.5.5.5',
+                method: 'POST',
+            });
+            expect(Keverd.getVisitorData).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    ip: '5.5.5.5',
+                    method: 'POST',
+                })
+            );
         });
     });
 

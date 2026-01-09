@@ -11,7 +11,14 @@ const keverdService = require('./keverdService');
  * @param {object} metadata - Additional metadata
  * @returns {Promise<object>} Payment intent with client secret
  */
-const createPaymentIntent = async (orderId, amount, currency = 'usd', userId, metadata = {}) => {
+const createPaymentIntent = async (
+  orderId,
+  amount,
+  currency = 'usd',
+  userId,
+  metadata = {},
+  requestContext = {}
+) => {
   try {
     // Validate amount
     if (!amount || amount <= 0) {
@@ -19,13 +26,16 @@ const createPaymentIntent = async (orderId, amount, currency = 'usd', userId, me
     }
 
     // Perform fraud detection check
-    const fraudData = await keverdService.assessFraudRisk({
-      orderId,
-      userId,
-      amount: amount / 100, // Convert cents to dollars for display
-      currency,
-      metadata,
-    });
+    const fraudData = await keverdService.assessFraudRisk(
+      {
+        orderId,
+        userId,
+        amount: amount / 100, // Convert cents to dollars for display
+        currency,
+        metadata,
+      },
+      requestContext
+    );
 
     // Check if transaction should be blocked based on fraud score
     if (fraudData.enabled && keverdService.shouldBlockTransaction(fraudData.riskScore)) {
@@ -48,6 +58,7 @@ const createPaymentIntent = async (orderId, amount, currency = 'usd', userId, me
           sessionId: fraudData.sessionId,
           requestId: fraudData.requestId,
           checkedAt: fraudData.checkedAt,
+          context: fraudData.context || requestContext,
         },
         errorMessage: `Transaction blocked due to high fraud risk (score: ${fraudData.riskScore})`,
       });
@@ -91,6 +102,8 @@ const createPaymentIntent = async (orderId, amount, currency = 'usd', userId, me
         sessionId: fraudData.sessionId,
         requestId: fraudData.requestId,
         checkedAt: fraudData.checkedAt,
+        context: fraudData.context || requestContext,
+        error: fraudData.error,
       },
     });
 
