@@ -14,6 +14,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
 const verifyWebhookSignature = require('../middlewares/webhookMiddleware');
 const { paymentRateLimiter, strictRateLimiter } = require('../middlewares/rateLimiter');
+const fraudContext = require('../middlewares/fraudContext');
 
 const router = express.Router();
 
@@ -24,7 +25,7 @@ router.post('/webhook', handleWebhook);
 // Protected routes - require authentication
 // Note: Rate limiting is primarily handled at API Gateway level
 // These rate limiters provide defense-in-depth protection
-router.post('/intent', paymentRateLimiter, authMiddleware, createPaymentIntent);
+router.post('/intent', paymentRateLimiter, authMiddleware, fraudContext, createPaymentIntent);
 router.post('/:paymentIntentId/confirm', paymentRateLimiter, authMiddleware, confirmPayment);
 router.post('/:paymentIntentId/cancel', paymentRateLimiter, authMiddleware, cancelPayment);
 router.get('/user', paymentRateLimiter, authMiddleware, getUserPayments);

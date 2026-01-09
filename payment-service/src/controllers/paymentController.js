@@ -28,7 +28,8 @@ const createPaymentIntent = async (req, res) => {
       amount,
       currency,
       userId,
-      metadata
+      metadata,
+      req.fraudContext || {}
     );
 
     res.status(201).json({

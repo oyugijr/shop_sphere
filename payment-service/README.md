@@ -14,6 +14,18 @@ Production-ready payment processing service for ShopSphere supporting **Stripe**
 - **Well-Tested**: Comprehensive test coverage (49 tests passing)
 - **Docker Ready**: Containerized for easy deployment
 
+## Fraud Detection (Keverd)
+
+ShopSphere keeps card-not-present risk low by piping every payment attempt through the [Keverd](https://developer.keverd.com/) fraud SDK before a Stripe intent is created. To enable the integration, set the following environment variables for the payment-service container:
+
+- `KEVERD_API_KEY` - required, copied from the Keverd dashboard.
+- `KEVERD_ENDPOINT` - optional; defaults to `https://app.keverd.com`.
+- `KEVERD_ENABLED` - set to `false` to disable checks temporarily (default: enabled).
+- `KEVERD_BLOCK_THRESHOLD` - integer risk score (0-100) that blocks outright (default 75).
+- `KEVERD_CHALLENGE_THRESHOLD` - score that triggers a manual review challenge before blocking (default 50).
+
+Every `POST /api/payments/intent` request now captures lightweight device context (client IP, `User-Agent`, `Accept-Language`, optional `X-Device-Id`/`X-Session-Id`) and forwards it to Keverd. Include those headers from your frontend or API gateway to maximize signal quality. Responses echo the fraud verdict under `data.fraudCheck`, so downstream services (e.g., order fulfillment) can highlight challenged or blocked orders.
+
 ## Supported Payment Methods
 
 ### 1. Stripe (International Payments)
@@ -671,7 +683,7 @@ Client requests M-Pesa payment:
 
 ### 3. Callback Received
 
-M-Pesa sends callback to service:   
+M-Pesa sends callback to service:
 
 - `ResultCode: 0` → Payment succeeded
 - `ResultCode: 1032` → Payment canceled by user
