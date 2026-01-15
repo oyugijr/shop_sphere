@@ -85,12 +85,19 @@ const OrderHistorySchema = new mongoose.Schema({
   }
 }, { _id: false });
 
+const generateOrderNumber = () => {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `ORD-${timestamp}-${random}`;
+};
+
 const OrderSchema = new mongoose.Schema(
   {
     orderNumber: {
       type: String,
       unique: true,
-      required: true
+      required: true,
+      default: generateOrderNumber
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -158,15 +165,19 @@ OrderSchema.index({ status: 1, createdAt: -1 });
 OrderSchema.index({ paymentStatus: 1 });
 
 // Generate order number before saving
-OrderSchema.pre('save', async function (next) {
-  if (this.isNew && !this.orderNumber) {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    this.orderNumber = `ORD-${timestamp}-${random}`;
+OrderSchema.pre('validate', function (next) {
+  if (!this.orderNumber) {
+    this.orderNumber = generateOrderNumber();
   }
+  next();
+});
 
-  // Add initial history entry
+OrderSchema.pre('save', function (next) {
   if (this.isNew) {
+    if (!Array.isArray(this.history)) {
+      this.history = [];
+    }
+
     this.history.push({
       status: this.status,
       timestamp: new Date(),

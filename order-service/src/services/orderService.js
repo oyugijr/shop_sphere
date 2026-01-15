@@ -1,6 +1,27 @@
+const mongoose = require("mongoose");
 const orderRepository = require("../repositories/orderRepository");
 const { validateOrder, sanitizeInput } = require("../utils/validation");
 const { verifyProductStock } = require("../utils/serviceClients");
+
+const getOrderUserId = (user) => {
+  if (!user) {
+    return null;
+  }
+
+  if (typeof user === 'string') {
+    return user;
+  }
+
+  if (user instanceof mongoose.Types.ObjectId) {
+    return user.toString();
+  }
+
+  if (user._id) {
+    return user._id.toString();
+  }
+
+  return user.toString?.() || null;
+};
 
 const createOrder = async (userId, orderData, token) => {
   // Validate order data
@@ -22,29 +43,34 @@ const createOrder = async (userId, orderData, token) => {
     country: sanitizeInput(orderData.shippingAddress.country)
   };
 
-  // Verify product stock availability
+  // Verify product stock availability and fetch product details
   try {
     const products = await verifyProductStock(orderData.items, token);
 
-    // Prepare order items with product details
+    // SECURITY FIX: Calculate total price server-side from product prices
+    // Never trust client-provided prices
+    let calculatedTotalPrice = 0;
     const items = orderData.items.map((item, index) => {
       const product = products[index];
-      const subtotal = item.quantity * item.price;
+      // Use server-fetched price, not client-provided price
+      const price = product.price;
+      const subtotal = item.quantity * price;
+      calculatedTotalPrice += subtotal;
 
       return {
         product: item.productId || item.product,
         quantity: item.quantity,
-        price: item.price,
-        name: item.name,
+        price: price, // Server-side price from product service
+        name: product.name, // Server-side product name from product service
         subtotal
       };
     });
 
-    // Create order
+    // Create order with server-calculated totalPrice
     const order = await orderRepository.createOrder({
       user: userId,
       items,
-      totalPrice: orderData.totalPrice,
+      totalPrice: calculatedTotalPrice, // Use server-calculated price
       shippingAddress,
       notes: orderData.notes ? sanitizeInput(orderData.notes) : undefined,
       paymentMethod: orderData.paymentMethod
@@ -67,7 +93,9 @@ const getOrderById = async (orderId, userId, isAdmin) => {
   }
 
   // Check authorization - users can only view their own orders
-  if (!isAdmin && order.user._id.toString() !== userId.toString()) {
+  const orderOwnerId = getOrderUserId(order.user);
+
+  if (!isAdmin && orderOwnerId !== userId.toString()) {
     const error = new Error('Access denied');
     error.statusCode = 403;
     throw error;
@@ -77,14 +105,14 @@ const getOrderById = async (orderId, userId, isAdmin) => {
 };
 
 const getUserOrders = async (userId, options) => {
-  return await orderRepository.getUserOrders(userId, options);
+  return await orderRepository.getUserOrders(userId, options || {});
 };
 
 const getAllOrders = async (options) => {
   return await orderRepository.getAllOrders(options);
 };
 
-const updateOrderStatus = async (orderId, status, userId, note) => {
+const updateOrderStatus = async (orderId, status, userId, note = null) => {
   const order = await orderRepository.updateOrderStatus(orderId, status, userId, note);
 
   if (!order) {
@@ -123,7 +151,9 @@ const cancelOrder = async (orderId, userId, isAdmin, reason) => {
   }
 
   // Check authorization - users can only cancel their own orders
-  if (!isAdmin && order.user._id.toString() !== userId.toString()) {
+  const orderOwnerId = getOrderUserId(order.user);
+
+  if (!isAdmin && orderOwnerId !== userId.toString()) {
     const error = new Error('Access denied');
     error.statusCode = 403;
     throw error;
@@ -142,7 +172,9 @@ const getOrderByOrderNumber = async (orderNumber, userId, isAdmin) => {
   }
 
   // Check authorization
-  if (!isAdmin && order.user._id.toString() !== userId.toString()) {
+  const orderOwnerId = getOrderUserId(order.user);
+
+  if (!isAdmin && orderOwnerId !== userId.toString()) {
     const error = new Error('Access denied');
     error.statusCode = 403;
     throw error;
