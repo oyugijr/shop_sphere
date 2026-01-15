@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Order = require("../models/Order");
 
 const createOrder = async (orderData) => {
@@ -5,9 +6,7 @@ const createOrder = async (orderData) => {
 };
 
 const getOrderById = async (orderId) => {
-  return await Order.findById(orderId)
-    .populate("user", "name email")
-    .populate("items.product", "name price imageUrl");
+  return await Order.findById(orderId);
 };
 
 const getUserOrders = async (userId, options = {}) => {
@@ -35,7 +34,6 @@ const getUserOrders = async (userId, options = {}) => {
 
   const [orders, total] = await Promise.all([
     Order.find(query)
-      .populate("items.product", "name price imageUrl")
       .sort(sort)
       .skip(skip)
       .limit(limit),
@@ -78,8 +76,6 @@ const getAllOrders = async (options = {}) => {
 
   const [orders, total] = await Promise.all([
     Order.find(query)
-      .populate("user", "name email")
-      .populate("items.product", "name price imageUrl")
       .sort(sort)
       .skip(skip)
       .limit(limit),
@@ -149,13 +145,27 @@ const cancelOrder = async (orderId, userId, reason) => {
 };
 
 const getOrderByOrderNumber = async (orderNumber) => {
-  return await Order.findOne({ orderNumber })
-    .populate("user", "name email")
-    .populate("items.product", "name price imageUrl");
+  return await Order.findOne({ orderNumber });
+};
+
+const normalizeObjectId = (value) => {
+  if (!value) {
+    return value;
+  }
+
+  if (value instanceof mongoose.Types.ObjectId) {
+    return value;
+  }
+
+  if (typeof value === 'string' && mongoose.Types.ObjectId.isValid(value)) {
+    return new mongoose.Types.ObjectId(value);
+  }
+
+  return value;
 };
 
 const getOrderStats = async (userId, isAdmin) => {
-  const query = isAdmin ? {} : { user: userId };
+  const query = isAdmin ? {} : { user: normalizeObjectId(userId) };
 
   const stats = await Order.aggregate([
     { $match: query },

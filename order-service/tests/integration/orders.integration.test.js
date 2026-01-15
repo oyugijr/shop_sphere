@@ -1,9 +1,56 @@
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration_test_secret';
+jest.setTimeout(120000);
+process.env.MONGOMS_START_TIMEOUT = '120000';
+
+jest.mock('../../src/utils/serviceClients', () => ({
+  verifyProductStock: jest.fn(),
+  updateProductStock: jest.fn(),
+  getPaymentByOrderId: jest.fn()
+}));
+
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
-const app = require('../../app');
 const Order = require('../../src/models/Order');
 const jwt = require('jsonwebtoken');
+const { verifyProductStock } = require('../../src/utils/serviceClients');
+const app = require('../../app');
+
+const buildMockProducts = (items = []) =>
+  items.map((item, index) => ({
+    _id: item.productId || item.product || `mock-product-${index}`,
+    stock: 100,
+    name: item.name || `Mock Product ${index + 1}`,
+    price: item.price || 100
+  }));
+
+const generateOrderNumber = () => `ORD-${Date.now()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+
+const buildOrderPayload = (overrides = {}) => ({
+  user: overrides.user || new mongoose.Types.ObjectId(),
+  items: overrides.items || [{
+    product: new mongoose.Types.ObjectId(),
+    quantity: 1,
+    price: 100,
+    name: 'Test Product',
+    subtotal: 100
+  }],
+  totalPrice: overrides.totalPrice || 100,
+  shippingAddress: overrides.shippingAddress || {
+    fullName: 'John Doe',
+    phoneNumber: '1234567890',
+    street: '123 Main Street',
+    city: 'New York',
+    state: 'NY',
+    zipCode: '10001',
+    country: 'USA'
+  },
+  paymentStatus: overrides.paymentStatus || 'pending',
+  status: overrides.status || 'pending',
+  orderNumber: overrides.orderNumber || generateOrderNumber(),
+  paymentMethod: overrides.paymentMethod || 'stripe'
+});
 
 let mongoServer;
 let userToken;
@@ -13,8 +60,13 @@ let adminId;
 
 describe('Order Service - Integration Tests (Real Database)', () => {
   beforeAll(async () => {
-    // Start in-memory MongoDB
-    mongoServer = await MongoMemoryServer.create();
+    // Start in-memory MongoDB with generous startup timeout for Windows/CI
+    mongoServer = await MongoMemoryServer.create({
+      instance: {
+        dbName: 'orders-test',
+        launchTimeout: 60000
+      }
+    });
     const mongoUri = mongoServer.getUri();
 
     // Connect to in-memory database
@@ -33,10 +85,14 @@ describe('Order Service - Integration Tests (Real Database)', () => {
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
   });
 
   beforeEach(async () => {
+    verifyProductStock.mockReset();
+    verifyProductStock.mockImplementation(async items => buildMockProducts(items));
     // Clean up database before each test
     await Order.deleteMany({});
   });
@@ -177,30 +233,7 @@ describe('Order Service - Integration Tests (Real Database)', () => {
     let testOrder;
 
     beforeEach(async () => {
-      testOrder = await Order.create({
-        user: userId,
-        items: [
-          {
-            product: new mongoose.Types.ObjectId(),
-            quantity: 1,
-            price: 100,
-            name: 'Test Product',
-            subtotal: 100
-          }
-        ],
-        totalPrice: 100,
-        shippingAddress: {
-          fullName: 'John Doe',
-          phoneNumber: '1234567890',
-          street: '123 Main Street',
-          city: 'New York',
-          state: 'NY',
-          zipCode: '10001',
-          country: 'USA'
-        },
-        status: 'pending',
-        paymentStatus: 'pending'
-      });
+      testOrder = await Order.create(buildOrderPayload({ user: userId }));
     });
 
     it('should get order by ID for the order owner', async () => {
@@ -246,41 +279,10 @@ describe('Order Service - Integration Tests (Real Database)', () => {
     beforeEach(async () => {
       // Create multiple orders for the user
       await Order.create([
-        {
-          user: userId,
-          items: [{ product: new mongoose.Types.ObjectId(), quantity: 1, price: 50, name: 'Product 1', subtotal: 50 }],
-          totalPrice: 50,
-          shippingAddress: {
-            fullName: 'John Doe',
-            phoneNumber: '1234567890',
-            street: '123 Main Street',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'USA'
-          },
-          status: 'pending'
-        },
-        {
-          user: userId,
-          items: [{ product: new mongoose.Types.ObjectId(), quantity: 2, price: 75, name: 'Product 2', subtotal: 150 }],
-          totalPrice: 150,
-          shippingAddress: {
-            fullName: 'John Doe',
-            phoneNumber: '1234567890',
-            street: '123 Main Street',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'USA'
-          },
-          status: 'delivered'
-        },
-        {
-          user: new mongoose.Types.ObjectId(), // Different user
-          items: [{ product: new mongoose.Types.ObjectId(), quantity: 1, price: 100, name: 'Product 3', subtotal: 100 }],
-          totalPrice: 100,
-          shippingAddress: {
+        buildOrderPayload({ user: userId, totalPrice: 50, status: 'pending', items: [{ product: new mongoose.Types.ObjectId(), quantity: 1, price: 50, name: 'Product 1', subtotal: 50 }] }),
+        buildOrderPayload({ user: userId, totalPrice: 150, status: 'delivered', items: [{ product: new mongoose.Types.ObjectId(), quantity: 2, price: 75, name: 'Product 2', subtotal: 150 }] }),
+        buildOrderPayload({
+          user: new mongoose.Types.ObjectId(), totalPrice: 100, status: 'pending', items: [{ product: new mongoose.Types.ObjectId(), quantity: 1, price: 100, name: 'Product 3', subtotal: 100 }], shippingAddress: {
             fullName: 'Jane Smith',
             phoneNumber: '9876543210',
             street: '456 Oak Avenue',
@@ -288,9 +290,8 @@ describe('Order Service - Integration Tests (Real Database)', () => {
             state: 'MA',
             zipCode: '02101',
             country: 'USA'
-          },
-          status: 'pending'
-        }
+          }
+        })
       ]);
     });
 
@@ -338,22 +339,7 @@ describe('Order Service - Integration Tests (Real Database)', () => {
     let testOrder;
 
     beforeEach(async () => {
-      testOrder = await Order.create({
-        user: userId,
-        items: [{ product: new mongoose.Types.ObjectId(), quantity: 1, price: 100, name: 'Product', subtotal: 100 }],
-        totalPrice: 100,
-        shippingAddress: {
-          fullName: 'John Doe',
-          phoneNumber: '1234567890',
-          street: '123 Main Street',
-          city: 'New York',
-          state: 'NY',
-          zipCode: '10001',
-          country: 'USA'
-        },
-        status: 'pending',
-        paymentStatus: 'pending'
-      });
+      testOrder = await Order.create(buildOrderPayload({ user: userId }));
     });
 
     it('should cancel order with valid reason', async () => {
@@ -441,51 +427,9 @@ describe('Order Service - Integration Tests (Real Database)', () => {
   describe('GET /api/orders/stats - Get Order Statistics', () => {
     beforeEach(async () => {
       await Order.create([
-        {
-          user: userId,
-          items: [{ product: new mongoose.Types.ObjectId(), quantity: 1, price: 100, name: 'Product', subtotal: 100 }],
-          totalPrice: 100,
-          shippingAddress: {
-            fullName: 'John Doe',
-            phoneNumber: '1234567890',
-            street: '123 Main Street',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'USA'
-          },
-          status: 'pending'
-        },
-        {
-          user: userId,
-          items: [{ product: new mongoose.Types.ObjectId(), quantity: 1, price: 200, name: 'Product', subtotal: 200 }],
-          totalPrice: 200,
-          shippingAddress: {
-            fullName: 'John Doe',
-            phoneNumber: '1234567890',
-            street: '123 Main Street',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'USA'
-          },
-          status: 'delivered'
-        },
-        {
-          user: userId,
-          items: [{ product: new mongoose.Types.ObjectId(), quantity: 1, price: 150, name: 'Product', subtotal: 150 }],
-          totalPrice: 150,
-          shippingAddress: {
-            fullName: 'John Doe',
-            phoneNumber: '1234567890',
-            street: '123 Main Street',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'USA'
-          },
-          status: 'cancelled'
-        }
+        buildOrderPayload({ user: userId, totalPrice: 100, status: 'pending' }),
+        buildOrderPayload({ user: userId, totalPrice: 200, status: 'delivered' }),
+        buildOrderPayload({ user: userId, totalPrice: 150, status: 'cancelled' })
       ]);
     });
 
