@@ -20,25 +20,25 @@ const getCart = async (req, res) => {
 const addToCart = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { productId, quantity, price, name } = req.body;
+    const { productId, quantity } = req.body;
 
     // Validate required fields
-    if (!productId || !quantity || !price || !name) {
-      return res.status(400).json({ 
-        error: "Missing required fields: productId, quantity, price, and name are required" 
+    if (!productId || quantity === undefined || quantity === null) {
+      return res.status(400).json({
+        error: "Missing required fields: productId and quantity are required"
       });
     }
 
-    const cart = await cartService.addToCart(userId, productId, quantity, price, name);
+    const cart = await cartService.addToCart(userId, productId, quantity);
     res.status(200).json(cart);
   } catch (error) {
     console.error("Error adding to cart:", error);
-    
+
     // Handle specific error cases
     if (error.message.includes("not found") || error.message.includes("Insufficient stock")) {
       return res.status(400).json({ error: error.message });
     }
-    
+
     if (error.message.includes("unavailable")) {
       return res.status(503).json({ error: error.message });
     }

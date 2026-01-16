@@ -83,7 +83,7 @@ describe("Cart Service Unit Tests", () => {
       validateProduct.mockResolvedValue({ _id: productId, name, price, stock: 10 });
       cartRepository.addOrUpdateItem.mockResolvedValue(mockCart);
 
-      const result = await cartService.addToCart(userId, productId, quantity, price, name);
+      const result = await cartService.addToCart(userId, productId, quantity);
 
       expect(validateProduct).toHaveBeenCalledWith(productId, quantity);
       expect(cartRepository.addOrUpdateItem).toHaveBeenCalledWith(userId, {
@@ -97,49 +97,49 @@ describe("Cart Service Unit Tests", () => {
     });
 
     it("should throw error if userId is missing", async () => {
-      await expect(
-        cartService.addToCart(null, "prod1", 1, 999.99, "Laptop")
-      ).rejects.toThrow("User ID is required");
+      await expect(cartService.addToCart(null, "prod1", 1)).rejects.toThrow(
+        "User ID is required"
+      );
     });
 
     it("should throw error if productId is missing", async () => {
-      await expect(
-        cartService.addToCart("user1", null, 1, 999.99, "Laptop")
-      ).rejects.toThrow("Product ID is required");
-    });
-
-    it("should throw error if name is missing", async () => {
-      await expect(
-        cartService.addToCart("user1", "prod1", 1, 999.99, null)
-      ).rejects.toThrow("Product name is required");
+      await expect(cartService.addToCart("user1", null, 1)).rejects.toThrow(
+        "Product ID is required"
+      );
     });
 
     it("should throw error if quantity is invalid", async () => {
-      await expect(
-        cartService.addToCart("user1", "prod1", 0, 999.99, "Laptop")
-      ).rejects.toThrow("Quantity must be at least 1");
+      await expect(cartService.addToCart("user1", "prod1", 0)).rejects.toThrow(
+        "Quantity must be at least 1"
+      );
 
-      await expect(
-        cartService.addToCart("user1", "prod1", 1.5, 999.99, "Laptop")
-      ).rejects.toThrow("Quantity must be an integer");
+      await expect(cartService.addToCart("user1", "prod1", 1.5)).rejects.toThrow(
+        "Quantity must be an integer"
+      );
     });
 
-    it("should throw error if price is invalid", async () => {
-      await expect(
-        cartService.addToCart("user1", "prod1", 1, -10, "Laptop")
-      ).rejects.toThrow("Price must be a positive number");
+    it("should throw error when product name is unavailable", async () => {
+      validateProduct.mockResolvedValue({ _id: "prod1", name: "", price: 10, stock: 5 });
 
-      await expect(
-        cartService.addToCart("user1", "prod1", 1, null, "Laptop")
-      ).rejects.toThrow("Price must be a positive number");
+      await expect(cartService.addToCart("user1", "prod1", 1)).rejects.toThrow(
+        "Product name is unavailable"
+      );
+    });
+
+    it("should throw error when product price is invalid", async () => {
+      validateProduct.mockResolvedValue({ _id: "prod1", name: "Laptop", price: 0, stock: 5 });
+
+      await expect(cartService.addToCart("user1", "prod1", 1)).rejects.toThrow(
+        "Product price is invalid"
+      );
     });
 
     it("should propagate product validation errors", async () => {
       validateProduct.mockRejectedValue(new Error("Product not found"));
 
-      await expect(
-        cartService.addToCart("user1", "prod1", 1, 999.99, "Laptop")
-      ).rejects.toThrow("Product not found");
+      await expect(cartService.addToCart("user1", "prod1", 1)).rejects.toThrow(
+        "Product not found"
+      );
     });
   });
 

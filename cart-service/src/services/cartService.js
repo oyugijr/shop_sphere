@@ -36,7 +36,7 @@ const getCart = async (userId) => {
  * @param {string} name - Product name
  * @returns {Promise<Object>}
  */
-const addToCart = async (userId, productId, quantity, price, name) => {
+const addToCart = async (userId, productId, quantity) => {
   // Validate inputs
   if (!userId) {
     throw new Error("User ID is required");
@@ -44,10 +44,6 @@ const addToCart = async (userId, productId, quantity, price, name) => {
 
   if (!productId) {
     throw new Error("Product ID is required");
-  }
-
-  if (!name) {
-    throw new Error("Product name is required");
   }
 
   if (!quantity || quantity < 1) {
@@ -58,21 +54,29 @@ const addToCart = async (userId, productId, quantity, price, name) => {
     throw new Error("Quantity must be an integer");
   }
 
-  if (!price || price < 0) {
-    throw new Error("Price must be a positive number");
+  // Validate product exists and has sufficient stock
+  const product = await validateProduct(productId, quantity);
+
+  const canonicalName = typeof product.name === "string" ? product.name.trim() : "";
+  if (!canonicalName) {
+    throw new Error("Product name is unavailable");
   }
 
-  // Validate product exists and has sufficient stock
-  await validateProduct(productId, quantity);
+  const canonicalPrice = Number(product.price);
+  if (!Number.isFinite(canonicalPrice) || canonicalPrice <= 0) {
+    throw new Error("Product price is invalid");
+  }
+
+  const normalizedPrice = Math.round(canonicalPrice * 100) / 100;
 
   // Calculate subtotal
-  const subtotal = calculateSubtotal(quantity, price);
+  const subtotal = calculateSubtotal(quantity, normalizedPrice);
 
   // Add or update item in cart
   const cart = await cartRepository.addOrUpdateItem(userId, {
     productId,
-    name,
-    price,
+    name: canonicalName,
+    price: normalizedPrice,
     quantity,
     subtotal,
   });

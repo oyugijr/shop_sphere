@@ -1,6 +1,12 @@
 const Cart = require("../models/Cart.model");
 const { calculateSubtotal } = require("../utils/calculations");
 
+const markItemsAsModified = (cart) => {
+  if (typeof cart.markModified === "function") {
+    cart.markModified("items");
+  }
+};
+
 /**
  * Find cart by user ID
  * @param {string} userId - User ID
@@ -26,12 +32,33 @@ const create = async (cartData) => {
  * @param {Object} updateData - Update data
  * @returns {Promise<Cart|null>}
  */
-const update = async (userId, updateData) => {
-  return await Cart.findOneAndUpdate(
-    { userId },
-    updateData,
-    { new: true, runValidators: true }
-  );
+const update = async (userId, updateData, options = {}) => {
+  const { direct = false } = options;
+
+  if (direct) {
+    return await Cart.findOneAndUpdate(
+      { userId },
+      updateData,
+      { new: true, runValidators: true }
+    );
+  }
+
+  const cart = await findByUserId(userId);
+
+  if (!cart) {
+    return null;
+  }
+
+  if (typeof updateData === "function") {
+    await updateData(cart);
+  } else {
+    cart.set(updateData);
+    if (Object.prototype.hasOwnProperty.call(updateData, "items")) {
+      markItemsAsModified(cart);
+    }
+  }
+
+  return await cart.save();
 };
 
 /**
@@ -77,6 +104,8 @@ const addOrUpdateItem = async (userId, item) => {
     cart.items.push(item);
   }
 
+  markItemsAsModified(cart);
+
   return await cart.save();
 };
 
@@ -114,6 +143,8 @@ const updateItemQuantity = async (userId, productId, quantity) => {
     );
   }
 
+  markItemsAsModified(cart);
+
   return await cart.save();
 };
 
@@ -134,6 +165,8 @@ const removeItem = async (userId, productId) => {
     (i) => i.productId.toString() !== productId.toString()
   );
 
+  markItemsAsModified(cart);
+
   return await cart.save();
 };
 
@@ -143,7 +176,10 @@ const removeItem = async (userId, productId) => {
  * @returns {Promise<Cart|null>}
  */
 const clearCart = async (userId) => {
-  return await update(userId, { items: [] });
+  return await update(userId, (cart) => {
+    cart.items = [];
+    markItemsAsModified(cart);
+  });
 };
 
 module.exports = {
