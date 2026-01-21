@@ -1,5 +1,9 @@
 const express = require('express');
 const dotenv = require('dotenv');
+
+// Load environment variables before any module that consumes them
+dotenv.config();
+
 const cors = require('cors');
 const connectDB = require('./src/config/db');
 const paymentRoutes = require('./src/routes/paymentRoutes');
@@ -8,9 +12,6 @@ const paypalRoutes = require('./src/routes/paypalRoutes');
 const errorHandler = require('./src/middlewares/errorHandler');
 const verifyWebhookSignature = require('./src/middlewares/webhookMiddleware');
 const keverdService = require('./src/services/keverdService');
-
-// Load environment variables
-dotenv.config();
 
 // Connect to MongoDB
 connectDB();
