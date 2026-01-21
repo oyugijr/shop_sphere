@@ -1,4 +1,5 @@
 const Stripe = require('stripe');
+const dotenv = require('dotenv');
 
 // For testing, allow mock
 if (process.env.NODE_ENV === 'test' && typeof jest !== 'undefined') {
