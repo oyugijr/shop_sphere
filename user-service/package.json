@@ -8,14 +8,14 @@
   },
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js",
+    "dev": "nodemon --config nodemon.json app.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch"
   },
   "keywords": [
-    "microservices", 
-    "authentication", 
-    "user-management", 
+    "microservices",
+    "authentication",
+    "user-management",
     "jwt"
   ],
   "author": "Oyugi Jr",

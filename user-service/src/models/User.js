@@ -66,8 +66,7 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for efficient queries
-UserSchema.index({ email: 1 });
+// Index for efficient queries (email unique index already handled by schema definition)
 UserSchema.index({ isDeleted: 1 });
 
 UserSchema.pre("save", async function (next) {

@@ -30,7 +30,7 @@ Content-Type: application/json
 {
   "name": "John Doe",
   "email": "john@example.com",
-  "password": "securepassword123"
+  "password": "secure-password123"
 }
 ```
 
@@ -59,7 +59,7 @@ Content-Type: application/json
 
 {
   "email": "john@example.com",
-  "password": "securepassword123"
+  "password": "secure-password123"
 }
 ```
 
@@ -286,7 +286,7 @@ curl http://localhost:5001/api/users/{user_id} \
 
 ## Monitoring
 
-#### Health Check
+### Health-Check
 
 ```bash
 curl http://localhost:5001/health

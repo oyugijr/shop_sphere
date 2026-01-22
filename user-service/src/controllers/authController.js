@@ -1,6 +1,6 @@
 const authService = require("../services/authService");
 
-class AuthControllers {
+class AuthController {
   /**
    * Register a new user
    */
